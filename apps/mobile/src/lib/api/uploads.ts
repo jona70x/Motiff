@@ -52,13 +52,20 @@ export async function uploadSyllabus(
   const ext = file.name.split(".").pop() ?? "pdf";
   const storagePath = `${user.id}/${courseId}/${Date.now()}.${ext}`;
 
-  // Upload the file to storage
-  const response = await fetch(file.uri);
-  const blob = await response.blob();
+  // Read file as ArrayBuffer — fetch().blob() silently produces 0 bytes for
+  // file:// URIs on React Native; XHR with responseType='arraybuffer' is reliable.
+  const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.responseType = "arraybuffer";
+    xhr.onload = () => resolve(xhr.response as ArrayBuffer);
+    xhr.onerror = () => reject(new Error("Failed to read local file"));
+    xhr.open("GET", file.uri);
+    xhr.send();
+  });
 
   const { error: storageError } = await supabase.storage
     .from("syllabi")
-    .upload(storagePath, blob, { contentType: file.mimeType, upsert: false });
+    .upload(storagePath, arrayBuffer, { contentType: file.mimeType, upsert: false });
 
   if (storageError) throw new Error(storageError.message);
 

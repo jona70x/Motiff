@@ -15,6 +15,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getCourseById } from "../lib/api/courses";
 import { getAssignmentsByCourse } from "../lib/api/assignments";
 import { getUploadsByCourse, deleteUpload } from "../lib/api/uploads";
+import { triggerExtraction } from "../lib/api/extraction";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
 
 function formatDate(dateString: string | null | undefined): string {
@@ -61,6 +62,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   const [uploads, setUploads] = useState<SyllabusUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [extractingId, setExtractingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -91,6 +93,49 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  const handleExtract = useCallback(
+    async (upload: SyllabusUpload) => {
+      if (extractingId) return;
+      setExtractingId(upload.id);
+      // Optimistic status update
+      setUploads((prev) =>
+        prev.map((u) => (u.id === upload.id ? { ...u, status: "extracting" as const } : u))
+      );
+
+      try {
+        const result = await triggerExtraction(upload.id);
+
+        if (!result.ok) {
+          const msg: Record<string, string> = {
+            flag_off:        "Extraction is not enabled yet.",
+            budget_exceeded: "Monthly extraction budget reached. Try again next month.",
+            unsupported:     "This PDF is image-only and can't be extracted yet.",
+            already_processed: "This syllabus has already been processed.",
+          };
+          Alert.alert("Extraction", msg[result.reason] ?? result.message ?? "Extraction failed.");
+          // Reload to get the real status from the server
+          await loadData();
+          return;
+        }
+
+        Alert.alert(
+          "Done!",
+          result.count === 0
+            ? "No deadlines found in the syllabus."
+            : `Found ${result.count} item${result.count === 1 ? "" : "s"}. Review them in the Candidates screen.${result.partial ? " Note: syllabus was very long and was partially processed." : ""}`,
+          [{ text: "OK" }]
+        );
+        await loadData();
+      } catch (err) {
+        Alert.alert("Error", err instanceof Error ? err.message : "Extraction failed");
+        await loadData();
+      } finally {
+        setExtractingId(null);
+      }
+    },
+    [extractingId, loadData]
+  );
 
   const handleDeleteUpload = useCallback(
     (upload: SyllabusUpload) => {
@@ -194,32 +239,61 @@ export function CourseDetailScreen({ route, navigation }: Props) {
             </Pressable>
           </View>
         );
-      case "upload":
+      case "upload": {
+        const u = item.item;
+        const isExtracting = extractingId === u.id || u.status === "extracting";
+        const canExtract   = u.status === "pending" || u.status === "failed";
         return (
-          <Pressable
-            style={styles.uploadCard}
-            onLongPress={() => handleDeleteUpload(item.item)}
-            accessibilityHint="Long press to remove"
-          >
+          <View style={styles.uploadCard}>
             <View style={styles.uploadCardLeft}>
               <Text style={styles.uploadPath} numberOfLines={1}>
-                {item.item.storage_path.split("/").pop() ?? item.item.storage_path}
+                {u.storage_path.split("/").pop() ?? u.storage_path}
               </Text>
               <Text style={styles.uploadMeta}>
-                {(item.item.byte_size / 1024).toFixed(0)} KB ·{" "}
-                {new Date(item.item.created_at).toLocaleDateString()}
+                {(u.byte_size / 1024).toFixed(0)} KB ·{" "}
+                {new Date(u.created_at).toLocaleDateString()}
               </Text>
+              {u.error_msg && (
+                <Text style={styles.uploadError} numberOfLines={2}>{u.error_msg}</Text>
+              )}
             </View>
-            <Text
-              style={[
-                styles.uploadStatus,
-                { color: STATUS_COLOR[item.item.status] },
-              ]}
-            >
-              {STATUS_LABEL[item.item.status]}
-            </Text>
-          </Pressable>
+            <View style={styles.uploadCardRight}>
+              {isExtracting ? (
+                <ActivityIndicator size="small" color="#3355cc" />
+              ) : canExtract ? (
+                <Pressable
+                  style={styles.extractBtn}
+                  onPress={() => handleExtract(u)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.extractBtnText}>Extract</Text>
+                </Pressable>
+              ) : u.status === "extracted" ? (
+                <Pressable
+                  style={styles.viewCandidatesBtn}
+                  onPress={() => navigation.navigate("SyllabusCandidates", { uploadId: u.id })}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.viewCandidatesBtnText}>Review</Text>
+                </Pressable>
+              ) : (
+                <Text style={[styles.uploadStatus, { color: STATUS_COLOR[u.status] }]}>
+                  {STATUS_LABEL[u.status]}
+                </Text>
+              )}
+              <Pressable
+                style={styles.deleteUploadBtn}
+                onPress={() => handleDeleteUpload(u)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Remove upload"
+              >
+                <Text style={styles.deleteUploadBtnText}>✕</Text>
+              </Pressable>
+            </View>
+          </View>
         );
+      }
       case "uploadsEmpty":
         return (
           <View style={styles.emptyState}>
@@ -230,7 +304,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
           </View>
         );
     }
-  }, [course, navigation, handleDeleteUpload]);
+  }, [course, navigation, handleDeleteUpload, handleExtract, extractingId]);
 
   if (loading && !course) {
     return (
@@ -403,6 +477,44 @@ const styles = StyleSheet.create({
   uploadStatus: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  uploadCardRight: {
+    alignItems: "center",
+    gap: 6,
+  },
+  uploadError: {
+    fontSize: 11,
+    color: "#b00020",
+    marginTop: 2,
+  },
+  extractBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#3355cc",
+    borderRadius: 6,
+  },
+  extractBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  viewCandidatesBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#1a8a3a",
+    borderRadius: 6,
+  },
+  viewCandidatesBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  deleteUploadBtn: {
+    padding: 4,
+  },
+  deleteUploadBtnText: {
+    fontSize: 12,
+    color: "#aaa",
   },
   emptyState: {
     alignItems: "center",

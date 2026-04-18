@@ -6,7 +6,8 @@
   "main": "./academic/schema.ts",
   "exports": {
     "./academic": "./academic/schema.ts",
-    "./ingestion": "./ingestion/schema.ts"
+    "./ingestion": "./ingestion/schema.ts",
+    "./ingestion/candidate": "./ingestion/candidate.ts"
   },
   "dependencies": {
     "zod": "^3.22.0"
