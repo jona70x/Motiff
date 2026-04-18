@@ -1,7 +1,10 @@
 -- 0007_focus_sessions.sql
 -- Pomodoro session log. One row per started session regardless of outcome.
 
-create type public.focus_outcome as enum ('completed', 'cancelled', 'paused_ended');
+do $$ begin
+  create type public.focus_outcome as enum ('completed', 'cancelled', 'paused_ended');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.focus_sessions (
   id           uuid        primary key default gen_random_uuid(),

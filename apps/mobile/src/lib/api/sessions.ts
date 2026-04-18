@@ -10,6 +10,10 @@ export type SessionInsertPayload = {
 };
 
 export async function createFocusSession(payload: SessionInsertPayload): Promise<void> {
-  const { error } = await supabase.from("focus_sessions").insert(payload);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from("focus_sessions").insert({
+    ...payload,
+    user_id: user?.id,
+  });
   if (error) throw new Error(error.message);
 }
