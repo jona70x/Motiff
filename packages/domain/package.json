@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./academic/schema.ts",
   "exports": {
-    "./academic": "./academic/schema.ts"
+    "./academic": "./academic/schema.ts",
+    "./ingestion": "./ingestion/schema.ts"
   },
   "dependencies": {
     "zod": "^3.22.0"

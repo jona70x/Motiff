@@ -32,7 +32,30 @@ export const assignmentInsertSchema = assignmentSchema.omit({
   created_at: true,
 });
 
+export const syllabusUploadStatusSchema = z.enum([
+  "pending",
+  "extracting",
+  "extracted",
+  "failed",
+  "unsupported",
+]);
+
+export const syllabusUploadSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  course_id: z.string().uuid(),
+  storage_path: z.string().min(1),
+  mime_type: z.string(),
+  byte_size: z.number().int().positive(),
+  status: syllabusUploadStatusSchema,
+  raw_text: z.string().nullable().optional(),
+  error_msg: z.string().nullable().optional(),
+  created_at: z.string().datetime(),
+});
+
 export type Course = z.infer<typeof courseSchema>;
 export type CourseInsert = z.infer<typeof courseInsertSchema>;
 export type Assignment = z.infer<typeof assignmentSchema>;
 export type AssignmentInsert = z.infer<typeof assignmentInsertSchema>;
+export type SyllabusUploadStatus = z.infer<typeof syllabusUploadStatusSchema>;
+export type SyllabusUpload = z.infer<typeof syllabusUploadSchema>;

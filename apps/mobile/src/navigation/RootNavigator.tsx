@@ -10,6 +10,7 @@ import { CourseDetailScreen } from "../screens/CourseDetailScreen";
 import { AddAssignmentScreen } from "../screens/AddAssignmentScreen";
 import { TodayScreen } from "../screens/TodayScreen";
 import { AssignmentDetailScreen } from "../screens/AssignmentDetailScreen";
+import { SyllabusUploadScreen } from "../screens/SyllabusUploadScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -70,6 +71,7 @@ export function RootNavigator() {
             </Stack.Group>
             <Stack.Screen name="CourseDetail">{(props) => <CourseDetailScreen {...props} />}</Stack.Screen>
             <Stack.Screen name="AssignmentDetail">{(props) => <AssignmentDetailScreen {...props} />}</Stack.Screen>
+            <Stack.Screen name="SyllabusUpload">{(props) => <SyllabusUploadScreen {...props} />}</Stack.Screen>
           </>
         )}
       </Stack.Navigator>
