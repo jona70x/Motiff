@@ -26,7 +26,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   const assignmentId: string | null = params.assignmentId || null;
   const title: string = params.title ?? "Focus session";
 
-  const { phase, remainingMs, elapsedMs, startedAt, start, pause, resume, cancel } =
+  const { phase, remainingMs, elapsedMs, startedAt, start, pause, resume, cancel, finish } =
     usePomodoro();
 
   const [showBreak, setShowBreak] = useState(false);
@@ -137,6 +137,12 @@ export function FocusTimerScreen({ route, navigation }: Props) {
         >
           <Text style={styles.primaryButtonText}>{isPaused ? "Resume" : "Pause"}</Text>
         </Pressable>
+
+        {__DEV__ && (
+          <Pressable style={styles.devFinishButton} onPress={finish} accessibilityRole="button">
+            <Text style={styles.devFinishText}>⚡ Finish now (dev)</Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -212,6 +218,19 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
     fontSize: 17,
     fontWeight: "700",
+  },
+  devFinishButton: {
+    marginTop: -16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  devFinishText: {
+    color: "#666",
+    fontSize: 13,
+    fontWeight: "600",
   },
   // ── Break screen ────────────────────────────────────────────────────────────
   breakBody: {

@@ -15,6 +15,7 @@ export type PomodoroActions = {
   pause: () => void;
   resume: () => void;
   cancel: () => void;
+  finish: () => void;
 };
 
 const DURATION_MS = 25 * 60 * 1000;
@@ -110,6 +111,14 @@ export function usePomodoro(): PomodoroState & PomodoroActions {
   // Cleanup on unmount
   useEffect(() => () => stopTicker(), [stopTicker]);
 
+  // DEV ONLY: instantly completes the timer for testing
+  const finish = useCallback(() => {
+    if (!__DEV__) return;
+    stopTicker();
+    setRemainingMs(0);
+    setPhase("completed");
+  }, [stopTicker]);
+
   return {
     phase,
     remainingMs,
@@ -119,5 +128,6 @@ export function usePomodoro(): PomodoroState & PomodoroActions {
     pause,
     resume,
     cancel,
+    finish,
   };
 }
