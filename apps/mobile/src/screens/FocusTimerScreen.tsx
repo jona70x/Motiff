@@ -35,6 +35,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   // Start timer immediately on mount
   useEffect(() => {
     start();
+    analytics.focusStarted({ assignmentId });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
