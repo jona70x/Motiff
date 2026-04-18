@@ -20,6 +20,9 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let serviceClient: ReturnType<typeof createClient> | null = null;
+  let uploadIdForCleanup: string | null = null;
+
   try {
     // ── Feature flag ────────────────────────────────────────────────────────
     if (Deno.env.get("SYLLABUS_EXTRACTION_ENABLED") !== "true") {
@@ -32,7 +35,7 @@ Deno.serve(async (req: Request) => {
       return json<ExtractResponse>({ ok: false, reason: "error", message: "Missing Authorization header" }, 401);
     }
 
-    const serviceClient = createClient(
+    serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
@@ -54,6 +57,7 @@ Deno.serve(async (req: Request) => {
     if (!upload_id) {
       return json<ExtractResponse>({ ok: false, reason: "error", message: "upload_id is required" }, 400);
     }
+    uploadIdForCleanup = upload_id;
 
     // ── Load upload row (must belong to caller) ───────────────────────────────
     const { data: upload, error: uploadErr } = await serviceClient
@@ -99,7 +103,7 @@ Deno.serve(async (req: Request) => {
     const pdfBytes = new Uint8Array(await fileData.arrayBuffer());
 
     // ── Extract text from PDF ─────────────────────────────────────────────────
-    const { text, isTextBased } = await extractPdfText(pdfBytes);
+    const { text, isTextBased } = extractPdfText(pdfBytes);
 
     if (!isTextBased) {
       await serviceClient
@@ -167,6 +171,14 @@ Deno.serve(async (req: Request) => {
 
   } catch (err) {
     console.error("extract-syllabus unhandled error:", err);
+    // Always reset stuck "extracting" rows so the user can retry
+    if (serviceClient && uploadIdForCleanup) {
+      await serviceClient
+        .from("syllabus_uploads")
+        .update({ status: "failed", error_msg: err instanceof Error ? err.message : String(err) })
+        .eq("id", uploadIdForCleanup)
+        .eq("status", "extracting");
+    }
     return json<ExtractResponse>(
       { ok: false, reason: "error", message: err instanceof Error ? err.message : String(err) },
       500

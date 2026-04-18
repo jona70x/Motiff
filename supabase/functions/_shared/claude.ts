@@ -90,13 +90,17 @@ export async function extractCandidates(
     ? syllabusText.slice(0, MAX_INPUT_CHARS)
     : syllabusText;
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 100_000 });
 
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const systemPrompt =
     `You are an academic assistant that reads course syllabi and extracts graded deadlines. ` +
-    `The course timezone is ${courseTimezone}. ` +
+    `Today's date is ${today}. The course timezone is ${courseTimezone}. ` +
     `When a due time is missing, assume 11:59 PM in the course timezone. ` +
-    `Do not infer or fabricate dates that are not in the text. ` +
+    `When a year is not stated, infer it from the semester context in the syllabus ` +
+    `(e.g. "Fall 2025" means dates are in 2025; if ambiguous, use the nearest future occurrence relative to today). ` +
+    `Month names like "October 15" are valid dates — convert them to ISO 8601 with the inferred year. ` +
+    `Only return null for due_at if the text gives truly no date information at all. ` +
     `Only extract items that are assessments with grades or points.`;
 
   const response = await client.messages.create({
