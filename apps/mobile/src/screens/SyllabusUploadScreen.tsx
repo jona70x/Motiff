@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { pickPdf, uploadSyllabus } from "../lib/api/uploads";
+import { analytics } from "../lib/analytics";
 
 type Props = NativeStackScreenProps<any, "SyllabusUpload">;
 
@@ -43,15 +44,19 @@ export function SyllabusUploadScreen({ route, navigation }: Props) {
   }) => {
     setUploading(true);
     setError(null);
+    analytics.uploadStarted({ courseId, bytes: file.size });
     try {
       await uploadSyllabus(courseId, file);
+      analytics.uploadSucceeded({ courseId, bytes: file.size });
       Alert.alert(
         "Uploaded",
         "Your syllabus has been uploaded. You'll be able to extract items from it shortly.",
         [{ text: "OK", onPress: () => navigation.goBack() }]
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const error = err instanceof Error ? err.message : "Upload failed";
+      analytics.uploadFailed({ courseId, error });
+      setError(error);
     } finally {
       setUploading(false);
     }

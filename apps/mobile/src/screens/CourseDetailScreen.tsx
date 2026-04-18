@@ -17,6 +17,7 @@ import { getAssignmentsByCourse } from "../lib/api/assignments";
 import { getUploadsByCourse, deleteUpload } from "../lib/api/uploads";
 import { triggerExtraction } from "../lib/api/extraction";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
+import { analytics } from "../lib/analytics";
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "No due date";
@@ -103,10 +104,12 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         prev.map((u) => (u.id === upload.id ? { ...u, status: "extracting" as const } : u))
       );
 
+      analytics.extractionTriggered({ uploadId: upload.id, courseId: upload.course_id });
       try {
         const result = await triggerExtraction(upload.id);
 
         if (!result.ok) {
+          analytics.extractionFailed({ uploadId: upload.id, reason: result.reason });
           const msg: Record<string, string> = {
             flag_off:        "Extraction is not enabled yet.",
             budget_exceeded: "Monthly extraction budget reached. Try again next month.",
@@ -114,11 +117,11 @@ export function CourseDetailScreen({ route, navigation }: Props) {
             already_processed: "This syllabus has already been processed.",
           };
           Alert.alert("Extraction", msg[result.reason] ?? result.message ?? "Extraction failed.");
-          // Reload to get the real status from the server
           await loadData();
           return;
         }
 
+        analytics.extractionSucceeded({ uploadId: upload.id, candidateCount: result.count, partial: result.partial });
         Alert.alert(
           "Done!",
           result.count === 0
@@ -128,6 +131,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         );
         await loadData();
       } catch (err) {
+        analytics.extractionFailed({ uploadId: upload.id, reason: "exception" });
         Alert.alert("Error", err instanceof Error ? err.message : "Extraction failed");
         await loadData();
       } finally {

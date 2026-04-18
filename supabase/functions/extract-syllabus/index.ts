@@ -2,6 +2,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { checkBudget, incrementUsage } from "../_shared/budget.ts";
 import { extractCandidates } from "../_shared/claude.ts";
 import { extractPdfText } from "../_shared/pdf.ts";
+import { sentryCapture, posthogCapture } from "../_shared/observability.ts";
 
 const MONTHLY_CAP_USD = Number(Deno.env.get("EXTRACTION_MONTHLY_CAP_USD") ?? "0.50");
 
@@ -123,15 +124,28 @@ Deno.serve(async (req: Request) => {
       .eq("id", upload_id);
 
     // ── Call Claude ───────────────────────────────────────────────────────────
+    posthogCapture(userId, "extraction_started_server", { upload_id, course_id: upload.course_id });
     let extractionResult;
     try {
       extractionResult = await extractCandidates(text);
     } catch (err) {
+      await sentryCapture(err, { upload_id, userId });
+      posthogCapture(userId, "extraction_failed_server", { upload_id, reason: String(err) });
       await setUploadFailed(serviceClient, upload_id, String(err));
       return json<ExtractResponse>({ ok: false, reason: "error", message: String(err) }, 500);
     }
 
     const { candidates, tokensIn, tokensOut, usdEstimate, partial } = extractionResult;
+
+    posthogCapture(userId, "extraction_completed_server", {
+      upload_id,
+      course_id:       upload.course_id,
+      candidate_count: candidates.length,
+      tokens_in:       tokensIn,
+      tokens_out:      tokensOut,
+      usd_estimate:    usdEstimate,
+      partial,
+    });
 
     // ── Increment usage ───────────────────────────────────────────────────────
     await incrementUsage(serviceClient, userId, { tokensIn, tokensOut, usdEstimate });
