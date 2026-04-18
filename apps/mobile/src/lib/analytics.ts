@@ -52,4 +52,9 @@ export const analytics = {
   focusCancelled(props: { assignmentId: string | null; durationS: number }) {
     client.capture("focus_cancelled", props);
   },
+
+  // ── Progress ───────────────────────────────────────────────────────────────
+  progressScreenViewed() {
+    client.capture("progress_screen_viewed", {});
+  },
 };

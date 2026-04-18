@@ -13,6 +13,7 @@ import { AssignmentDetailScreen } from "../screens/AssignmentDetailScreen";
 import { SyllabusUploadScreen } from "../screens/SyllabusUploadScreen";
 import { SyllabusCandidatesScreen } from "../screens/SyllabusCandidatesScreen";
 import { FocusTimerScreen } from "../screens/FocusTimerScreen";
+import { ProgressScreen } from "../screens/ProgressScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,6 +39,13 @@ function MainTabs() {
         component={CoursesScreen}
         options={{
           tabBarIcon: ({ color }) => <TabIcon label="▤" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Progress"
+        component={ProgressScreen}
+        options={{
+          tabBarIcon: ({ color }) => <TabIcon label="▨" color={color} />,
         }}
       />
     </Tab.Navigator>
