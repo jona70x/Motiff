@@ -27,7 +27,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
         </View>
 
         <Text style={styles.comingSoon}>
-          Focus timer coming in S2-2
+          Focus timer launching soon — stay tuned
         </Text>
 
         {/* Hidden identifier for navigation verification */}
