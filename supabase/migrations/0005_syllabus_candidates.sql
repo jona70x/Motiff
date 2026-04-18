@@ -1,12 +1,18 @@
 -- 0005_syllabus_candidates.sql
 -- Stores AI-extracted deadline candidates for a given syllabus upload.
 
-create type public.candidate_status
-  as enum ('pending', 'confirmed', 'edited', 'rejected');
+do $$ begin
+  create type public.candidate_status
+    as enum ('pending', 'confirmed', 'edited', 'rejected');
+exception when duplicate_object then null;
+end $$;
 
 -- Confidence bands computed from the raw 0-1 score returned by the model.
-create type public.confidence_band
-  as enum ('low', 'medium', 'high');
+do $$ begin
+  create type public.confidence_band
+    as enum ('low', 'medium', 'high');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.syllabus_candidates (
   id             uuid primary key default gen_random_uuid(),
