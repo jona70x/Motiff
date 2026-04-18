@@ -1,5 +1,12 @@
 export type DueBucket = "today" | "this_week" | "later";
 
+export function isOverdue(dueAt: string | null | undefined, now: Date = new Date()): boolean {
+  if (!dueAt) return false;
+  const due = new Date(dueAt);
+  if (isNaN(due.getTime())) return false;
+  return due.getTime() < now.getTime();
+}
+
 export function bucketAssignment(dueAt: string | null | undefined, now: Date = new Date()): DueBucket {
   if (!dueAt) return "later";
 

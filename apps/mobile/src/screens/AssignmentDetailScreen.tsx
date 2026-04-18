@@ -2,27 +2,20 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { getAssignmentById } from "../lib/api/assignments";
-import { getCourseById } from "../lib/api/courses";
-import type { Assignment, Course } from "../lib/schema";
+import { getAssignmentWithCourse, type AssignmentWithCourse } from "../lib/api/assignments";
 import { formatRelativeDue } from "../lib/time";
 
 type Props = NativeStackScreenProps<any, "AssignmentDetail">;
 
 export function AssignmentDetailScreen({ route, navigation }: Props) {
   const assignmentId = (route.params as any)?.assignmentId || "";
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [course, setCourse] = useState<Course | null>(null);
+  const [assignment, setAssignment] = useState<AssignmentWithCourse | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const a = await getAssignmentById(assignmentId);
+      const a = await getAssignmentWithCourse(assignmentId);
       setAssignment(a);
-      if (a?.course_id) {
-        const c = await getCourseById(a.course_id);
-        setCourse(c);
-      }
     } catch (err) {
       console.error("Failed to load assignment:", err);
     } finally {
@@ -69,8 +62,8 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
       </View>
 
       <View style={styles.body}>
-        {course && (
-          <Text style={styles.courseLabel}>{course.title}</Text>
+        {assignment.course && (
+          <Text style={styles.courseLabel}>{assignment.course.title}</Text>
         )}
         <Text style={styles.title}>{assignment.title}</Text>
 

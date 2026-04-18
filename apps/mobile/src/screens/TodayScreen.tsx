@@ -9,12 +9,12 @@ import {
   Text,
   View,
 } from "react-native";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentRow } from "../components/AssignmentRow";
 
-type Props = NativeStackScreenProps<any, "Today">;
+type Props = BottomTabScreenProps<any, "Today">;
 
 type Buckets = {
   today: AssignmentWithCourse[];

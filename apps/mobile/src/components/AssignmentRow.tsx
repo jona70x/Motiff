@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { formatRelativeDue } from "../lib/time";
+import { formatRelativeDue, isOverdue } from "../lib/time";
 import type { AssignmentWithCourse } from "../lib/api/today";
 
 type Props = {
@@ -10,7 +10,7 @@ type Props = {
 export function AssignmentRow({ assignment, onPress }: Props) {
   const courseTitle = assignment.course?.title ?? "Unknown course";
   const relativeDue = formatRelativeDue(assignment.due_at);
-  const isOverdue = relativeDue.toLowerCase().includes("overdue");
+  const overdue = isOverdue(assignment.due_at);
 
   return (
     <Pressable
@@ -26,7 +26,7 @@ export function AssignmentRow({ assignment, onPress }: Props) {
           {assignment.title}
         </Text>
       </View>
-      <Text style={[styles.due, isOverdue && styles.dueOverdue]} numberOfLines={1}>
+      <Text style={[styles.due, overdue && styles.dueOverdue]} numberOfLines={1}>
         {relativeDue}
       </Text>
     </Pressable>
