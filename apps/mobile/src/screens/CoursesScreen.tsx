@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getCourses } from "../lib/api/courses";
 import type { Course } from "../lib/schema";
@@ -58,7 +59,7 @@ export function CoursesScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Courses</Text>
         <Pressable
@@ -104,7 +105,7 @@ export function CoursesScreen({ navigation }: Props) {
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 

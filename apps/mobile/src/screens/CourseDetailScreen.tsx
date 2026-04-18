@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getCourseById } from "../lib/api/courses";
 import { getAssignmentsByCourse } from "../lib/api/assignments";
@@ -79,9 +80,9 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Text style={styles.backButton}>← Back</Text>
         </Pressable>
       </View>
@@ -99,14 +100,18 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         data={assignments}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.assignmentCard}>
+          <Pressable
+            style={styles.assignmentCard}
+            onPress={() => navigation.navigate("AssignmentDetail", { assignmentId: item.id })}
+            accessibilityRole="button"
+          >
             <Text style={styles.assignmentTitle}>{item.title}</Text>
             <Text style={styles.assignmentDue}>{formatDate(item.due_at)}</Text>
             {item.est_minutes && (
               <Text style={styles.assignmentMeta}>~{item.est_minutes} min</Text>
             )}
             {item.kind && <Text style={styles.assignmentMeta}>{item.kind}</Text>}
-          </View>
+          </Pressable>
         )}
         contentContainerStyle={assignments.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
@@ -127,7 +132,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 

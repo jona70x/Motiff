@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { bucketAssignment } from "../lib/time";
@@ -75,7 +76,7 @@ export function TodayScreen({ navigation }: Props) {
   const totalCount = buckets.today.length + buckets.this_week.length + buckets.later.length;
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Today</Text>
       </View>
@@ -131,7 +132,7 @@ export function TodayScreen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

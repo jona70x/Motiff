@@ -1,8 +1,13 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { getAssignmentWithCourse, type AssignmentWithCourse } from "../lib/api/assignments";
+import {
+  deleteAssignment,
+  getAssignmentWithCourse,
+  type AssignmentWithCourse,
+} from "../lib/api/assignments";
 import { formatRelativeDue } from "../lib/time";
 
 type Props = NativeStackScreenProps<any, "AssignmentDetail">;
@@ -11,6 +16,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
   const assignmentId = (route.params as any)?.assignmentId || "";
   const [assignment, setAssignment] = useState<AssignmentWithCourse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -29,6 +35,34 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
       load();
     }, [load])
   );
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete assignment?",
+      "This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAssignment(assignmentId);
+              navigation.goBack();
+            } catch (err) {
+              setDeleting(false);
+              Alert.alert(
+                "Failed to delete",
+                err instanceof Error ? err.message : "Unknown error"
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   if (loading) {
     return (
@@ -54,10 +88,16 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
     : "No due date";
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Text style={styles.backButton}>← Back</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => navigation.navigate("AddAssignment", { assignmentId })}
+          hitSlop={12}
+        >
+          <Text style={styles.editButton}>Edit</Text>
         </Pressable>
       </View>
 
@@ -90,8 +130,21 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
             <Text style={styles.metaValue}>{assignment.est_minutes} minutes</Text>
           </View>
         )}
+
+        <Pressable
+          style={[styles.deleteBtn, deleting && styles.deleteBtnDisabled]}
+          onPress={handleDelete}
+          disabled={deleting}
+          accessibilityRole="button"
+        >
+          {deleting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.deleteBtnText}>Delete assignment</Text>
+          )}
+        </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -107,6 +160,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#fff",
@@ -117,6 +173,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#3355cc",
     fontWeight: "500",
+  },
+  editButton: {
+    fontSize: 16,
+    color: "#3355cc",
+    fontWeight: "600",
   },
   body: {
     padding: 20,
@@ -161,6 +222,21 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     color: "#fff",
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: "#b00020",
+    alignItems: "center",
+  },
+  deleteBtnDisabled: {
+    opacity: 0.5,
+  },
+  deleteBtnText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "600",
   },
 });
