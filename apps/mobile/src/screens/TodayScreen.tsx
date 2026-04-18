@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { bucketAssignment } from "../lib/time";
-import { AssignmentRow } from "../components/AssignmentRow";
+import { AssignmentCard } from "../components/AssignmentCard";
 
 type Props = BottomTabScreenProps<any, "Today">;
 
@@ -159,10 +159,13 @@ function Section({
         <Text style={styles.sectionEmpty}>{emptyText}</Text>
       ) : (
         assignments.map((a) => (
-          <AssignmentRow
+          <AssignmentCard
             key={a.id}
             assignment={a}
             onPress={() => navigation.navigate("AssignmentDetail", { assignmentId: a.id })}
+            onStartFocus={() =>
+              navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
+            }
           />
         ))
       )}
@@ -198,10 +201,13 @@ function CollapsibleSection({
           <Text style={styles.sectionEmpty}>No later assignments</Text>
         ) : (
           assignments.map((a) => (
-            <AssignmentRow
+            <AssignmentCard
               key={a.id}
               assignment={a}
               onPress={() => navigation.navigate("AssignmentDetail", { assignmentId: a.id })}
+              onStartFocus={() =>
+                navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
+              }
             />
           ))
         ))}
