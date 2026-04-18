@@ -1,0 +1,13 @@
+{
+  "name": "@motiff/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./academic/schema.ts",
+  "exports": {
+    "./academic": "./academic/schema.ts"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  }
+}
