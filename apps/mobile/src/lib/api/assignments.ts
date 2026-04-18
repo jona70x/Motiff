@@ -53,6 +53,21 @@ export async function getAssignmentById(id: string): Promise<Assignment | null> 
   return assignment || null;
 }
 
+export type AssignmentWithCourse = Assignment & {
+  course: { id: string; title: string } | null;
+};
+
+export async function getAssignmentWithCourse(id: string): Promise<AssignmentWithCourse | null> {
+  const { data, error } = await supabase
+    .from("assignments")
+    .select("*, course:courses(id, title)")
+    .eq("id", id)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw new Error(error.message);
+  return (data as AssignmentWithCourse) || null;
+}
+
 export async function updateAssignment(id: string, data: Partial<AssignmentInsert>): Promise<Assignment | null> {
   const { data: assignment, error } = await supabase
     .from("assignments")
