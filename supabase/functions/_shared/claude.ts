@@ -108,7 +108,7 @@ export async function extractCandidates(
     max_tokens: 4096,
     system: systemPrompt,
     tools: [EXTRACTION_TOOL],
-    tool_choice: { type: "auto" },
+    tool_choice: { type: "any" },
     messages: [
       {
         role: "user",
