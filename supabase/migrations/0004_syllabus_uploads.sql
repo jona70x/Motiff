@@ -1,6 +1,6 @@
 -- 0004_syllabus_uploads.sql
 -- Storage bucket + syllabus_uploads table with full RLS.
--- Deletion of a row also removes the storage object via a trigger.
+-- Storage object cleanup is handled client-side in deleteUpload (uploads.ts).
 
 -- ─── Storage bucket ──────────────────────────────────────────────────────────
 
@@ -43,8 +43,11 @@ create policy "syllabi_delete_own"
 
 -- ─── syllabus_uploads table ───────────────────────────────────────────────────
 
-create type public.syllabus_upload_status
-  as enum ('pending', 'extracting', 'extracted', 'failed', 'unsupported');
+do $$ begin
+  create type public.syllabus_upload_status
+    as enum ('pending', 'extracting', 'extracted', 'failed', 'unsupported');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.syllabus_uploads (
   id           uuid primary key default gen_random_uuid(),

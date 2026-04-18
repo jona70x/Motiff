@@ -1,5 +1,5 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,25 @@ import { getCourseById } from "../lib/api/courses";
 import { getAssignmentsByCourse } from "../lib/api/assignments";
 import { getUploadsByCourse, deleteUpload } from "../lib/api/uploads";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
+
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "No due date";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+type ListItem =
+  | { type: "courseInfo" }
+  | { type: "assignmentsHeader" }
+  | { type: "assignment"; item: Assignment }
+  | { type: "assignmentsEmpty" }
+  | { type: "syllabusHeader" }
+  | { type: "upload"; item: SyllabusUpload }
+  | { type: "uploadsEmpty" };
 
 type Props = NativeStackScreenProps<any, "CourseDetail">;
 
@@ -101,61 +120,28 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     []
   );
 
-  if (loading && !course) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  const listData = useMemo<ListItem[]>(() => {
+    if (!course) return [];
+    return [
+      { type: "courseInfo" },
+      { type: "assignmentsHeader" },
+      ...(assignments.length === 0
+        ? [{ type: "assignmentsEmpty" } as ListItem]
+        : assignments.map((a): ListItem => ({ type: "assignment", item: a }))),
+      { type: "syllabusHeader" },
+      ...(uploads.length === 0
+        ? [{ type: "uploadsEmpty" } as ListItem]
+        : uploads.map((u): ListItem => ({ type: "upload", item: u }))),
+    ];
+  }, [course, assignments, uploads]);
 
-  if (!course) {
-    return (
-      <View style={styles.center}>
-        <Text>Course not found</Text>
-      </View>
-    );
-  }
-
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "No due date";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  type ListItem =
-    | { type: "courseInfo" }
-    | { type: "assignmentsHeader" }
-    | { type: "assignment"; item: Assignment }
-    | { type: "assignmentsEmpty" }
-    | { type: "syllabusHeader" }
-    | { type: "upload"; item: SyllabusUpload }
-    | { type: "uploadsEmpty" };
-
-  const listData: ListItem[] = [
-    { type: "courseInfo" },
-    { type: "assignmentsHeader" },
-    ...(assignments.length === 0
-      ? [{ type: "assignmentsEmpty" } as ListItem]
-      : assignments.map((item): ListItem => ({ type: "assignment", item }))),
-    { type: "syllabusHeader" },
-    ...(uploads.length === 0
-      ? [{ type: "uploadsEmpty" } as ListItem]
-      : uploads.map((item): ListItem => ({ type: "upload", item }))),
-  ];
-
-  const renderItem = ({ item }: { item: ListItem }) => {
+  const renderItem = useCallback(({ item }: { item: ListItem }) => {
     switch (item.type) {
       case "courseInfo":
         return (
           <View style={styles.courseInfo}>
-            <Text style={styles.courseTitle}>{course.title}</Text>
-            {course.term && <Text style={styles.courseTerm}>{course.term}</Text>}
+            <Text style={styles.courseTitle}>{course?.title}</Text>
+            {course?.term && <Text style={styles.courseTerm}>{course.term}</Text>}
           </View>
         );
       case "assignmentsHeader":
@@ -198,8 +184,8 @@ export function CourseDetailScreen({ route, navigation }: Props) {
               style={styles.uploadBtn}
               onPress={() =>
                 navigation.navigate("SyllabusUpload", {
-                  courseId: course.id,
-                  courseName: course.title,
+                  courseId: course?.id,
+                  courseName: course?.title,
                 })
               }
               accessibilityRole="button"
@@ -244,7 +230,23 @@ export function CourseDetailScreen({ route, navigation }: Props) {
           </View>
         );
     }
-  };
+  }, [course, navigation, handleDeleteUpload]);
+
+  if (loading && !course) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!course) {
+    return (
+      <View style={styles.center}>
+        <Text>Course not found</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
