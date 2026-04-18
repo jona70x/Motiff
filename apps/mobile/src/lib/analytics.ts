@@ -1,0 +1,44 @@
+import PostHog from "posthog-react-native";
+
+const client = new PostHog("phc_t83s6gbD54522aUn6EQTyegcw2dAm879MbYyj2Aq2VmV", {
+  host: "https://us.i.posthog.com",
+});
+
+export const analytics = {
+  identify(userId: string) {
+    client.identify(userId);
+  },
+
+  // ── Upload funnel ──────────────────────────────────────────────────────────
+  uploadStarted(props: { courseId: string; bytes: number }) {
+    client.capture("upload_started", props);
+  },
+  uploadSucceeded(props: { courseId: string; bytes: number }) {
+    client.capture("upload_succeeded", props);
+  },
+  uploadFailed(props: { courseId: string; error: string }) {
+    client.capture("upload_failed", props);
+  },
+
+  // ── Extraction funnel ──────────────────────────────────────────────────────
+  extractionTriggered(props: { uploadId: string; courseId: string }) {
+    client.capture("extraction_triggered", props);
+  },
+  extractionSucceeded(props: { uploadId: string; candidateCount: number; partial: boolean }) {
+    client.capture("extraction_succeeded", props);
+  },
+  extractionFailed(props: { uploadId: string; reason: string }) {
+    client.capture("extraction_failed", props);
+  },
+
+  // ── Candidate review ───────────────────────────────────────────────────────
+  candidateConfirmed(props: { uploadId: string; kind: string | null; wasEdited: boolean }) {
+    client.capture("candidate_confirmed", props);
+  },
+  candidateRejected(props: { uploadId: string }) {
+    client.capture("candidate_rejected", props);
+  },
+  bulkConfirmed(props: { uploadId: string; count: number }) {
+    client.capture("candidate_bulk_confirmed", props);
+  },
+};

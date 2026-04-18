@@ -22,6 +22,7 @@ import {
   type CandidateEdits,
 } from "../lib/api/extraction";
 import type { SyllabusCandidate } from "../lib/schema";
+import { analytics } from "../lib/analytics";
 
 type Props = NativeStackScreenProps<any, "SyllabusCandidates">;
 
@@ -257,6 +258,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
     setBusy(candidate.id, true);
     try {
       await confirmCandidate(candidate);
+      analytics.candidateConfirmed({ uploadId, kind: candidate.kind ?? null, wasEdited: false });
       setCandidates((prev) =>
         prev.map((c) => c.id === candidate.id ? { ...c, status: "confirmed" as const } : c)
       );
@@ -265,7 +267,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
     } finally {
       setBusy(candidate.id, false);
     }
-  }, [setBusy]);
+  }, [setBusy, uploadId]);
 
   const handleReject = useCallback((candidate: SyllabusCandidate) => {
     Alert.alert(
@@ -280,6 +282,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
             setBusy(candidate.id, true);
             try {
               await rejectCandidate(candidate.id);
+              analytics.candidateRejected({ uploadId });
               setCandidates((prev) =>
                 prev.map((c) => c.id === candidate.id ? { ...c, status: "rejected" as const } : c)
               );
@@ -316,6 +319,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
     };
     try {
       await confirmCandidate(candidate, edits);
+      analytics.candidateConfirmed({ uploadId, kind: edits.kind, wasEdited: true });
       setCandidates((prev) =>
         prev.map((c) =>
           c.id === candidate.id
@@ -348,7 +352,8 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
           onPress: async () => {
             setBulkBusy(true);
             try {
-              await bulkConfirmHighConfidence(candidates);
+              const confirmed = await bulkConfirmHighConfidence(candidates);
+              analytics.bulkConfirmed({ uploadId, count: confirmed });
               await load();
             } catch (err) {
               Alert.alert("Error", err instanceof Error ? err.message : "Bulk confirm failed");
