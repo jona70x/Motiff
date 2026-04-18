@@ -41,4 +41,15 @@ export const analytics = {
   bulkConfirmed(props: { uploadId: string; count: number }) {
     client.capture("candidate_bulk_confirmed", props);
   },
+
+  // ── Focus funnel ───────────────────────────────────────────────────────────
+  focusStarted(props: { assignmentId: string | null }) {
+    client.capture("focus_started", props);
+  },
+  focusCompleted(props: { assignmentId: string | null; durationS: number }) {
+    client.capture("focus_completed", props);
+  },
+  focusCancelled(props: { assignmentId: string | null; durationS: number }) {
+    client.capture("focus_cancelled", props);
+  },
 };
