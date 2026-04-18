@@ -61,7 +61,7 @@ export function ProgressScreen({ navigation }: Props) {
     );
   }
 
-  const hasData = summary.totalMinutes > 0;
+  const hasData = sessions.length > 0;
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
