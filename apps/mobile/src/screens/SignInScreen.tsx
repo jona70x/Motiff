@@ -28,7 +28,7 @@ export function SignInScreen() {
     setSubmitting(true);
     try {
       if (mode === "signUp") {
-        const { error: err } = await supabase.auth.signUp({
+        const { data, error: err } = await supabase.auth.signUp({
           email: email.trim(),
           password,
         });
@@ -36,10 +36,12 @@ export function SignInScreen() {
           setError(err.message);
           return;
         }
-        Alert.alert(
-          "Check your email",
-          "If email confirmation is enabled, confirm via the link before signing in.",
-        );
+        if (!data.session) {
+          Alert.alert(
+            "Check your email",
+            "If email confirmation is enabled, confirm via the link before signing in.",
+          );
+        }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -78,7 +80,7 @@ export function SignInScreen() {
           style={styles.input}
           placeholder="Password"
           autoCapitalize="none"
-          autoComplete="password"
+          autoComplete={mode === "signUp" ? "new-password" : "password"}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
