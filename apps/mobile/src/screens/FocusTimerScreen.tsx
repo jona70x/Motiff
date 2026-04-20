@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { usePomodoro } from "../hooks/usePomodoro";
+import { usePomodoro, DEFAULT_DURATION_MS } from "../hooks/usePomodoro";
 import { createFocusSession } from "../lib/api/sessions";
 import { getTransferTargets, type AssignmentWithCourse } from "../lib/api/today";
 import { analytics } from "../lib/analytics";
@@ -29,7 +29,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   const params = (route.params as any) || {};
   const assignmentId: string | null = params.assignmentId || null;
   const title: string = params.title ?? "Focus session";
-  const initialDurationMs: number = params.durationMs ?? 25 * 60 * 1000;
+  const initialDurationMs: number = params.durationMs ?? DEFAULT_DURATION_MS;
 
   const { phase, remainingMs, elapsedMs, startedAt, start, pause, resume, cancel, finish } =
     usePomodoro(initialDurationMs);
@@ -39,6 +39,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   const [transferTargets, setTransferTargets] = useState<AssignmentWithCourse[]>([]);
   const [loadingTargets, setLoadingTargets] = useState(false);
   const sessionWritten = useRef(false);
+  const wasAlreadyPaused = useRef(false);
 
   useEffect(() => {
     start();
@@ -99,7 +100,8 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   }, [phase, pause, resume]);
 
   const handleDoneWithThis = useCallback(async () => {
-    if (phase === "running") pause();
+    wasAlreadyPaused.current = phase === "paused";
+    if (!wasAlreadyPaused.current) pause();
     setLoadingTargets(true);
     setShowTransferModal(true);
     try {
@@ -116,7 +118,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
 
   const handleTransferDismiss = useCallback(() => {
     setShowTransferModal(false);
-    if (phase === "paused") resume();
+    if (phase === "paused" && !wasAlreadyPaused.current) resume();
   }, [phase, resume]);
 
   const handleTransferPick = useCallback(
