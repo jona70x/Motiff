@@ -18,12 +18,13 @@ export type PomodoroActions = {
   finish: () => void;
 };
 
-const DURATION_MS = 25 * 60 * 1000;
+export const DEFAULT_DURATION_MS = 25 * 60 * 1000;
 const TICK_MS = 500;
 
-export function usePomodoro(): PomodoroState & PomodoroActions {
+export function usePomodoro(initialDurationMs: number = DEFAULT_DURATION_MS): PomodoroState & PomodoroActions {
   const [phase, setPhase] = useState<PomodoroPhase>("idle");
-  const [remainingMs, setRemainingMs] = useState(DURATION_MS);
+  const [remainingMs, setRemainingMs] = useState(initialDurationMs);
+  const durationMsRef = useRef(initialDurationMs);
 
   // Wall-clock refs — no state, so no extra re-renders
   const startedAtRef    = useRef<Date | null>(null);
@@ -48,7 +49,7 @@ export function usePomodoro(): PomodoroState & PomodoroActions {
     stopTicker();
     intervalRef.current = setInterval(() => {
       const elapsed = getElapsedMs();
-      const remaining = Math.max(0, DURATION_MS - elapsed);
+      const remaining = Math.max(0, durationMsRef.current - elapsed);
       setRemainingMs(remaining);
       if (remaining === 0) {
         stopTicker();
@@ -61,7 +62,7 @@ export function usePomodoro(): PomodoroState & PomodoroActions {
     startedAtRef.current = new Date();
     accruedPauseMs.current = 0;
     pausedAtRef.current = null;
-    setRemainingMs(DURATION_MS);
+    setRemainingMs(durationMsRef.current);
     setPhase("running");
     startTicker();
   }, [startTicker]);
@@ -110,6 +111,11 @@ export function usePomodoro(): PomodoroState & PomodoroActions {
 
   // Cleanup on unmount
   useEffect(() => () => stopTicker(), [stopTicker]);
+
+  // Sync durationMsRef when initialDurationMs changes (e.g. transfer)
+  useEffect(() => {
+    durationMsRef.current = initialDurationMs;
+  }, [initialDurationMs]);
 
   // DEV ONLY: instantly completes the timer for testing
   const finish = useCallback(() => {

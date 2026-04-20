@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const focusOutcomeSchema = z.enum(["completed", "cancelled", "paused_ended"]);
+export const focusOutcomeSchema = z.enum(["completed", "cancelled", "paused_ended", "transferred"]);
 
 export const focusSessionSchema = z.object({
   id:            z.string().uuid(),
