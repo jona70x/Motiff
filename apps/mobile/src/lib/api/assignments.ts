@@ -85,3 +85,27 @@ export async function deleteAssignment(id: string): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function completeAssignment(id: string): Promise<Assignment | null> {
+  const { data, error } = await supabase
+    .from("assignments")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function uncompleteAssignment(id: string): Promise<Assignment | null> {
+  const { data, error } = await supabase
+    .from("assignments")
+    .update({ completed_at: null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}

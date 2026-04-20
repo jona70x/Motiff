@@ -11,16 +11,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { getWeekSessions } from "../lib/api/progress";
+import { getWeekSessions, getWeekCompletions } from "../lib/api/progress";
 import { buildWeekSummary } from "../../../../packages/domain/progress/summary";
 import { WeekBarChart } from "../components/WeekBarChart";
 import { analytics } from "../lib/analytics";
-import type { SessionRecord } from "../../../../packages/domain/progress/summary";
+import type { SessionRecord, CompletionRecord } from "../../../../packages/domain/progress/summary";
 
 type Props = BottomTabScreenProps<any, "Progress">;
 
 export function ProgressScreen({ navigation }: Props) {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [completions, setCompletions] = useState<CompletionRecord[]>([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]       = useState<string | null>(null);
@@ -28,8 +29,12 @@ export function ProgressScreen({ navigation }: Props) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const data = await getWeekSessions();
-      setSessions(data);
+      const [sessionData, completionData] = await Promise.all([
+        getWeekSessions(),
+        getWeekCompletions(),
+      ]);
+      setSessions(sessionData);
+      setCompletions(completionData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load progress");
     } finally {
@@ -46,7 +51,7 @@ export function ProgressScreen({ navigation }: Props) {
     }, [load])
   );
 
-  const summary = useMemo(() => buildWeekSummary(sessions), [sessions]);
+  const summary = useMemo(() => buildWeekSummary(sessions, completions), [sessions, completions]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
