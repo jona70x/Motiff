@@ -15,3 +15,8 @@ export async function getTodayAssignments(): Promise<AssignmentWithCourse[]> {
   if (error) throw new Error(error.message);
   return (data as AssignmentWithCourse[]) || [];
 }
+
+export async function getTransferTargets(excludeAssignmentId: string): Promise<AssignmentWithCourse[]> {
+  const all = await getTodayAssignments();
+  return all.filter((a) => a.id !== excludeAssignmentId);
+}
