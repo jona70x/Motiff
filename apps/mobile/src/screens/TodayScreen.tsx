@@ -1,7 +1,8 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
+import { completeAssignment, uncompleteAssignment } from "../lib/api/assignments";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentCard } from "../components/AssignmentCard";
 
@@ -23,12 +25,23 @@ type Buckets = {
   later: AssignmentWithCourse[];
 };
 
+type UndoState = {
+  assignment: AssignmentWithCourse;
+  bucket: keyof Buckets;
+  index: number;
+} | null;
+
+const UNDO_DURATION_MS = 4000;
+
 export function TodayScreen({ navigation }: Props) {
   const [assignments, setAssignments] = useState<AssignmentWithCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [laterExpanded, setLaterExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [undo, setUndo] = useState<UndoState>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoOpacity = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(async () => {
     try {
@@ -47,6 +60,9 @@ export function TodayScreen({ navigation }: Props) {
     useCallback(() => {
       setLoading(true);
       load();
+      return () => {
+        if (undoTimer.current) clearTimeout(undoTimer.current);
+      };
     }, [load])
   );
 
@@ -54,6 +70,56 @@ export function TodayScreen({ navigation }: Props) {
     setRefreshing(true);
     load();
   }, [load]);
+
+  const dismissUndo = useCallback(() => {
+    Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>
+      setUndo(null)
+    );
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  }, [undoOpacity]);
+
+  const showUndoToast = useCallback(
+    (state: UndoState) => {
+      setUndo(state);
+      Animated.timing(undoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      undoTimer.current = setTimeout(dismissUndo, UNDO_DURATION_MS);
+    },
+    [undoOpacity, dismissUndo]
+  );
+
+  const handleComplete = useCallback(
+    (assignment: AssignmentWithCourse, bucket: keyof Buckets, index: number) => {
+      setAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
+      showUndoToast({ assignment, bucket, index });
+      completeAssignment(assignment.id).catch(() => {
+        setAssignments((prev) => {
+          const next = [...prev];
+          next.splice(index, 0, assignment);
+          return next;
+        });
+        setError("Failed to mark done. Please try again.");
+        dismissUndo();
+      });
+    },
+    [showUndoToast, dismissUndo]
+  );
+
+  const handleUndo = useCallback(() => {
+    if (!undo) return;
+    uncompleteAssignment(undo.assignment.id)
+      .then(() => {
+        setAssignments((prev) => {
+          const next = [...prev];
+          next.splice(undo.index, 0, undo.assignment);
+          return next;
+        });
+      })
+      .catch(() => {
+        setError("Failed to undo. Please refresh.");
+      });
+    dismissUndo();
+  }, [undo, dismissUndo]);
 
   const buckets = useMemo<Buckets>(() => {
     const result: Buckets = { today: [], this_week: [], later: [] };
@@ -107,58 +173,72 @@ export function TodayScreen({ navigation }: Props) {
           </View>
         ) : (
           <>
-            <Section
+            <BucketSection
               title="Today"
-              count={buckets.today.length}
               assignments={buckets.today}
+              bucketKey="today"
               emptyText="Nothing due today"
               navigation={navigation}
+              onComplete={handleComplete}
             />
-            <Section
+            <BucketSection
               title="This week"
-              count={buckets.this_week.length}
               assignments={buckets.this_week}
+              bucketKey="this_week"
               emptyText="Nothing due this week"
               navigation={navigation}
+              onComplete={handleComplete}
             />
             <CollapsibleSection
               title="Later"
-              count={buckets.later.length}
               assignments={buckets.later}
+              bucketKey="later"
               expanded={laterExpanded}
               onToggle={() => setLaterExpanded((v) => !v)}
               navigation={navigation}
+              onComplete={handleComplete}
             />
           </>
         )}
       </ScrollView>
+
+      {undo && (
+        <Animated.View style={[styles.undoBar, { opacity: undoOpacity }]}>
+          <Text style={styles.undoText}>Marked as done</Text>
+          <Pressable onPress={handleUndo} accessibilityRole="button">
+            <Text style={styles.undoAction}>Undo</Text>
+          </Pressable>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
 
-function Section({
+function BucketSection({
   title,
-  count,
   assignments,
+  bucketKey,
   emptyText,
   navigation,
+  onComplete,
 }: {
   title: string;
-  count: number;
   assignments: AssignmentWithCourse[];
+  bucketKey: keyof Buckets;
   emptyText: string;
   navigation: Props["navigation"];
+  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets, index: number) => void;
 }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionCount}>{count}</Text>
+        <Text style={styles.sectionCount}>{assignments.length}</Text>
       </View>
       {assignments.length === 0 ? (
         <Text style={styles.sectionEmpty}>{emptyText}</Text>
       ) : (
-        assignments.map((a) => (
+        assignments.map((a, i) => (
           <AssignmentCard
             key={a.id}
             assignment={a}
@@ -166,6 +246,7 @@ function Section({
             onStartFocus={() =>
               navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
             }
+            onComplete={() => onComplete(a, bucketKey, i)}
           />
         ))
       )}
@@ -175,18 +256,20 @@ function Section({
 
 function CollapsibleSection({
   title,
-  count,
   assignments,
+  bucketKey,
   expanded,
   onToggle,
   navigation,
+  onComplete,
 }: {
   title: string;
-  count: number;
   assignments: AssignmentWithCourse[];
+  bucketKey: keyof Buckets;
   expanded: boolean;
   onToggle: () => void;
   navigation: Props["navigation"];
+  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets, index: number) => void;
 }) {
   return (
     <View style={styles.section}>
@@ -194,13 +277,13 @@ function CollapsibleSection({
         <Text style={styles.sectionTitle}>
           {title} {expanded ? "▾" : "▸"}
         </Text>
-        <Text style={styles.sectionCount}>{count}</Text>
+        <Text style={styles.sectionCount}>{assignments.length}</Text>
       </Pressable>
       {expanded &&
         (assignments.length === 0 ? (
           <Text style={styles.sectionEmpty}>No later assignments</Text>
         ) : (
-          assignments.map((a) => (
+          assignments.map((a, i) => (
             <AssignmentCard
               key={a.id}
               assignment={a}
@@ -208,6 +291,7 @@ function CollapsibleSection({
               onStartFocus={() =>
                 navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
               }
+              onComplete={() => onComplete(a, bucketKey, i)}
             />
           ))
         ))}
@@ -310,5 +394,27 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#b00020",
     fontSize: 13,
+  },
+  undoBar: {
+    position: "absolute",
+    bottom: 24,
+    left: 16,
+    right: 16,
+    backgroundColor: "#222",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  undoText: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  undoAction: {
+    color: "#7eb8ff",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

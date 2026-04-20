@@ -5,6 +5,12 @@ export type SessionRecord = {
   course_title: string | null;
 };
 
+export type CompletionRecord = {
+  completed_at: string;
+  course_id: string;
+  course_title: string | null;
+};
+
 export type DayBar = {
   date: string;    // YYYY-MM-DD in local time
   label: string;   // "Mon", "Tue", …
@@ -36,6 +42,7 @@ function localDateString(date: Date): string {
 
 export function buildWeekSummary(
   sessions: SessionRecord[],
+  completions: CompletionRecord[] = [],
   now: Date = new Date()
 ): WeekSummary {
   // Build rolling 7-day window: [6 days ago … today]
@@ -76,6 +83,18 @@ export function buildWeekSummary(
       }
       courseMap.get(s.course_id!)!.minutesFocused += Math.round(s.duration_s / 60);
     }
+  }
+
+  for (const c of completions) {
+    if (!courseMap.has(c.course_id)) {
+      courseMap.set(c.course_id, {
+        courseId: c.course_id,
+        courseTitle: c.course_title ?? c.course_id,
+        minutesFocused: 0,
+        assignmentsCompleted: 0,
+      });
+    }
+    courseMap.get(c.course_id)!.assignmentsCompleted += 1;
   }
 
   const totalMinutes = days.reduce((sum, d) => sum + d.minutes, 0);

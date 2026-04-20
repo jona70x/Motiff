@@ -6,6 +6,7 @@ type Props = {
   assignment: AssignmentWithCourse;
   onPress?: () => void;
   onStartFocus: () => void;
+  onComplete: () => void;
 };
 
 const KIND_STYLES: Record<string, { bg: string; text: string }> = {
@@ -22,7 +23,7 @@ function kindStyle(kind: string | null | undefined) {
   return KIND_STYLES[k] ?? KIND_STYLES.other;
 }
 
-export function AssignmentCard({ assignment, onPress, onStartFocus }: Props) {
+export function AssignmentCard({ assignment, onPress, onStartFocus, onComplete }: Props) {
   const courseTitle = assignment.course?.title ?? "Unknown course";
   const relativeDue = formatRelativeDue(assignment.due_at);
   const overdue = isOverdue(assignment.due_at);
@@ -61,17 +62,30 @@ export function AssignmentCard({ assignment, onPress, onStartFocus }: Props) {
           ) : null}
         </View>
 
-        <Pressable
-          style={styles.focusButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onStartFocus();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Start Focus"
-        >
-          <Text style={styles.focusButtonText}>Start Focus</Text>
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            style={styles.doneButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onComplete();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Mark done"
+          >
+            <Text style={styles.doneButtonText}>✓</Text>
+          </Pressable>
+          <Pressable
+            style={styles.focusButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onStartFocus();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Start Focus"
+          >
+            <Text style={styles.focusButtonText}>Start Focus</Text>
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -147,6 +161,25 @@ const styles = StyleSheet.create({
   },
   dueOverdue: {
     color: "#b00020",
+    fontWeight: "600",
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  doneButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#bbb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  doneButtonText: {
+    fontSize: 14,
+    color: "#555",
     fontWeight: "600",
   },
   focusButton: {

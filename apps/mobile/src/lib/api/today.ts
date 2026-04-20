@@ -9,6 +9,7 @@ export async function getTodayAssignments(): Promise<AssignmentWithCourse[]> {
   const { data, error } = await supabase
     .from("assignments")
     .select("*, course:courses(id, title)")
+    .is("completed_at", null)
     .order("due_at", { ascending: true, nullsFirst: false });
 
   if (error) throw new Error(error.message);

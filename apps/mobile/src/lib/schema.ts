@@ -22,6 +22,7 @@ export const assignmentSchema = z.object({
   due_at: z.string().datetime().optional().nullable(),
   kind: z.string().optional().nullable(),
   est_minutes: z.number().int().positive().optional().nullable(),
+  completed_at: z.string().datetime().optional().nullable(),
   created_at: z.string().datetime(),
 });
 
