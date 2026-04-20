@@ -53,8 +53,8 @@ export async function getDailyPlan(date: string): Promise<PlanBlockRow[]> {
  * @param blocks - Output of {@link generateDailyPlan}.
  */
 export async function saveDailyPlan(date: string, blocks: PlanBlock[]): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("Not authenticated");
 
   // Delete existing blocks for this date
   const { error: deleteError } = await supabase

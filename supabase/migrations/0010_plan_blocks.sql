@@ -23,14 +23,24 @@ create index if not exists idx_plan_blocks_user_date
 
 alter table public.plan_blocks enable row level security;
 
-create policy "plan_blocks_select_own"
-  on public.plan_blocks for select
-  using (auth.uid() = user_id);
+-- Idempotent policy creation (CREATE POLICY has no IF NOT EXISTS before Postgres 16)
+do $$ begin
+  create policy "plan_blocks_select_own"
+    on public.plan_blocks for select
+    using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
-create policy "plan_blocks_insert_own"
-  on public.plan_blocks for insert
-  with check (auth.uid() = user_id);
+do $$ begin
+  create policy "plan_blocks_insert_own"
+    on public.plan_blocks for insert
+    with check (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
-create policy "plan_blocks_delete_own"
-  on public.plan_blocks for delete
-  using (auth.uid() = user_id);
+do $$ begin
+  create policy "plan_blocks_delete_own"
+    on public.plan_blocks for delete
+    using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
