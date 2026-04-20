@@ -89,20 +89,22 @@ export function TodayScreen({ navigation }: Props) {
   );
 
   const handleComplete = useCallback(
-    (assignment: AssignmentWithCourse, bucket: keyof Buckets, index: number) => {
+    (assignment: AssignmentWithCourse, bucket: keyof Buckets) => {
+      const flatIndex = assignments.findIndex((a) => a.id === assignment.id);
       setAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
-      showUndoToast({ assignment, bucket, index });
+      showUndoToast({ assignment, bucket, index: flatIndex });
       completeAssignment(assignment.id).catch(() => {
         setAssignments((prev) => {
           const next = [...prev];
-          next.splice(index, 0, assignment);
+          const insertAt = flatIndex >= 0 ? Math.min(flatIndex, next.length) : next.length;
+          next.splice(insertAt, 0, assignment);
           return next;
         });
         setError("Failed to mark done. Please try again.");
         dismissUndo();
       });
     },
-    [showUndoToast, dismissUndo]
+    [assignments, showUndoToast, dismissUndo]
   );
 
   const handleUndo = useCallback(() => {
@@ -111,7 +113,8 @@ export function TodayScreen({ navigation }: Props) {
       .then(() => {
         setAssignments((prev) => {
           const next = [...prev];
-          next.splice(undo.index, 0, undo.assignment);
+          const insertAt = undo.index >= 0 ? Math.min(undo.index, next.length) : next.length;
+          next.splice(insertAt, 0, undo.assignment);
           return next;
         });
       })
@@ -227,7 +230,7 @@ function BucketSection({
   bucketKey: keyof Buckets;
   emptyText: string;
   navigation: Props["navigation"];
-  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets, index: number) => void;
+  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets) => void;
 }) {
   return (
     <View style={styles.section}>
@@ -238,7 +241,7 @@ function BucketSection({
       {assignments.length === 0 ? (
         <Text style={styles.sectionEmpty}>{emptyText}</Text>
       ) : (
-        assignments.map((a, i) => (
+        assignments.map((a) => (
           <AssignmentCard
             key={a.id}
             assignment={a}
@@ -246,7 +249,7 @@ function BucketSection({
             onStartFocus={() =>
               navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
             }
-            onComplete={() => onComplete(a, bucketKey, i)}
+            onComplete={() => onComplete(a, bucketKey)}
           />
         ))
       )}
@@ -269,7 +272,7 @@ function CollapsibleSection({
   expanded: boolean;
   onToggle: () => void;
   navigation: Props["navigation"];
-  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets, index: number) => void;
+  onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets) => void;
 }) {
   return (
     <View style={styles.section}>
@@ -283,7 +286,7 @@ function CollapsibleSection({
         (assignments.length === 0 ? (
           <Text style={styles.sectionEmpty}>No later assignments</Text>
         ) : (
-          assignments.map((a, i) => (
+          assignments.map((a) => (
             <AssignmentCard
               key={a.id}
               assignment={a}
@@ -291,7 +294,7 @@ function CollapsibleSection({
               onStartFocus={() =>
                 navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
               }
-              onComplete={() => onComplete(a, bucketKey, i)}
+              onComplete={() => onComplete(a, bucketKey)}
             />
           ))
         ))}
