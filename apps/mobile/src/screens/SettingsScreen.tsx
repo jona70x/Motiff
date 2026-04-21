@@ -27,6 +27,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { getUserSettings, updateUserSettings } from "../lib/api/settings";
 import { DEFAULT_DAILY_BUDGET_MINUTES } from "../../../../packages/domain/plan/generator";
+import { parseBudgetInput } from "../../../../packages/domain/plan/budget";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -69,41 +70,22 @@ export function SettingsScreen({ navigation }: Props) {
   }, []);
 
   /**
-   * Validates the input and persists the budget to Supabase.
-   * A blank input clears the custom budget (reverts to app default).
+   * Validates the input via {@link parseBudgetInput} and persists the budget
+   * to Supabase. A blank input clears the custom budget (reverts to app default).
    */
   const handleSave = useCallback(async () => {
     setError(null);
 
-    const trimmed = budgetText.trim();
+    const parsed = parseBudgetInput(budgetText);
 
-    // Blank = clear custom budget, use default
-    if (trimmed === "") {
-      setSaving(true);
-      try {
-        await updateUserSettings({ daily_budget_minutes: null });
-        navigation.goBack();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to save settings");
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-
-    const parsed = parseInt(trimmed, 10);
-    if (isNaN(parsed) || parsed <= 0 || String(parsed) !== trimmed) {
-      setError("Please enter a whole number greater than 0.");
-      return;
-    }
-    if (parsed > 1440) {
-      setError("Daily budget can't exceed 1440 minutes (24 hours).");
+    if (!parsed.ok) {
+      setError(parsed.error);
       return;
     }
 
     setSaving(true);
     try {
-      await updateUserSettings({ daily_budget_minutes: parsed });
+      await updateUserSettings({ daily_budget_minutes: parsed.value });
       navigation.goBack();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings");
