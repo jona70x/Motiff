@@ -41,24 +41,26 @@ export async function getUserSettings(): Promise<UserSettings> {
     throw new Error(error.message);
   }
 
-  return { daily_budget_minutes: (data as UserSettings).daily_budget_minutes ?? null };
+  return { daily_budget_minutes: (data as UserSettings).daily_budget_minutes };
 }
 
 /**
- * Updates the current user's settings in their profiles row.
- * Uses upsert so it works even if the profile row doesn't exist yet.
+ * Persists the current user's settings to their profiles row.
+ * Uses upsert (insert-or-update) so it is safe even if the profile row
+ * does not yet exist — e.g. if the on_auth_user_created trigger was missed
+ * or a new signup flow bypasses it.
  *
  * @param settings - Partial settings object; only provided keys are written.
- * @throws If the user is not authenticated or the update fails.
+ * @throws If the user is not authenticated or the upsert fails.
  */
 export async function updateUserSettings(settings: Partial<UserSettings>): Promise<void> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Not authenticated");
 
+  // id must be included in the upsert payload so Supabase knows the conflict key
   const { error } = await supabase
     .from("profiles")
-    .update(settings)
-    .eq("id", user.id);
+    .upsert({ id: user.id, ...settings }, { onConflict: "id" });
 
   if (error) throw new Error(error.message);
 }
