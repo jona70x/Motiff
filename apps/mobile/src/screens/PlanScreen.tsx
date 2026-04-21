@@ -3,16 +3,18 @@
  * Displays the user's auto-generated daily study plan.
  *
  * On every focus event the screen:
- *   1. Fetches today's uncompleted assignments.
- *   2. Runs generateDailyPlan (pure, in-memory) to produce ordered blocks.
- *   3. Enriches each block with its assignment/course data (already in memory).
- *   4. Renders the plan immediately — no wait for the DB save.
- *   5. Persists the plan to Supabase in the background (best-effort).
+ *   1. Fetches user settings + today's uncompleted assignments (parallel).
+ *   2. Resolves the daily budget (user value or DEFAULT_DAILY_BUDGET_MINUTES).
+ *   3. Normalizes assignments to PlanInput shape.
+ *   4. Runs generateDailyPlan (pure, in-memory) to produce ordered blocks.
+ *   5. Enriches each block with its assignment/course data (already in memory).
+ *   6. Renders the plan immediately — no wait for the DB save.
+ *   7. Persists the plan to Supabase in the background (best-effort).
  *
  * The "Regenerate" button triggers the same flow on demand.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,6 +30,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { saveDailyPlan } from "../lib/api/plan";
+import { getUserSettings } from "../lib/api/settings";
 import { generateDailyPlan, DEFAULT_DAILY_BUDGET_MINUTES, type PlanBlock } from "../../../../packages/domain/plan/generator";
 import { PlanBlockCard } from "../components/PlanBlockCard";
 import { analytics } from "../lib/analytics";
@@ -90,6 +93,8 @@ export function PlanScreen({ navigation }: Props) {
   const [regenerating, setRegenerating]   = useState(false);
   const [saveWarning, setSaveWarning]     = useState(false);
   const [error, setError]                 = useState<string | null>(null);
+  // Resolved budget: user's saved value or the app default
+  const [budgetMinutes, setBudgetMinutes] = useState(DEFAULT_DAILY_BUDGET_MINUTES);
 
   // Prevent overlapping generate calls when the user rapidly switches tabs
   const isGenerating = useRef(false);
@@ -113,11 +118,17 @@ export function PlanScreen({ navigation }: Props) {
     setError(null);
 
     try {
-      // 1. Fetch uncompleted assignments (same source as Today screen)
-      const assignments = await getTodayAssignments();
+      // 1. Fetch user settings and uncompleted assignments in parallel
+      const [settings, assignments] = await Promise.all([
+        getUserSettings(),
+        getTodayAssignments(),
+      ]);
 
-      // 2. Normalize assignments to PlanInput (due_at: undefined → null)
-      const budget = DEFAULT_DAILY_BUDGET_MINUTES;
+      // 2. Resolve budget: prefer user's saved value, fall back to app default
+      const budget = settings.daily_budget_minutes ?? DEFAULT_DAILY_BUDGET_MINUTES;
+      setBudgetMinutes(budget);
+
+      // 3. Normalize assignments to PlanInput (due_at: undefined → null)
       const planInputs = assignments.map((a) => ({
         id:          a.id,
         title:       a.title,
@@ -126,14 +137,14 @@ export function PlanScreen({ navigation }: Props) {
         course_id:   a.course_id,
       }));
 
-      // 3. Generate the plan in memory — pure, no I/O
+      // 4. Generate the plan in memory — pure, no I/O
       const blocks = generateDailyPlan(planInputs, budget);
 
-      // 4. Enrich with display data and render immediately
+      // 5. Enrich with display data and render immediately
       const enriched = enrichBlocks(blocks, assignments);
       setDisplayBlocks(enriched);
 
-      // 5. Track analytics
+      // 6. Track analytics
       const eventProps = { blockCount: blocks.length, budgetMinutes: budget };
       if (isRegen) {
         analytics.planRegenerated(eventProps);
@@ -141,7 +152,7 @@ export function PlanScreen({ navigation }: Props) {
         analytics.planScreenViewed(eventProps);
       }
 
-      // 6. Persist to Supabase in the background — display does not wait for this
+      // 7. Persist to Supabase in the background — display does not wait for this
       saveDailyPlan(localDateString(), blocks).catch(() => {
         setSaveWarning(true);
       });
@@ -193,20 +204,33 @@ export function PlanScreen({ navigation }: Props) {
           )}
         </View>
 
-        {/* Regenerate button — shows spinner when in flight */}
-        <Pressable
-          onPress={handleRegenerate}
-          disabled={regenerating}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Regenerate plan"
-        >
-          {regenerating ? (
-            <ActivityIndicator size="small" color="#111" />
-          ) : (
-            <Text style={styles.regenButton}>↺ Regenerate</Text>
-          )}
-        </Pressable>
+        {/* Right-side controls: regenerate + settings */}
+        <View style={styles.headerRight}>
+          {/* Regenerate button — shows spinner when in flight */}
+          <Pressable
+            onPress={handleRegenerate}
+            disabled={regenerating}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Regenerate plan"
+          >
+            {regenerating ? (
+              <ActivityIndicator size="small" color="#111" />
+            ) : (
+              <Text style={styles.regenButton}>↺ Regenerate</Text>
+            )}
+          </Pressable>
+
+          {/* Settings shortcut */}
+          <Pressable
+            onPress={() => navigation.navigate("Settings")}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+          >
+            <Text style={styles.settingsButton}>⚙</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* ── Non-blocking save warning ── */}
@@ -254,7 +278,7 @@ export function PlanScreen({ navigation }: Props) {
           }
           ListHeaderComponent={
             <Text style={styles.listHeader}>
-              Prioritised by urgency · {DEFAULT_DAILY_BUDGET_MINUTES} min budget
+              Prioritised by urgency · {budgetMinutes} min budget
             </Text>
           }
           renderItem={({ item }) => (
@@ -317,11 +341,21 @@ const styles = StyleSheet.create({
     color: "#888",
     fontWeight: "500",
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
   regenButton: {
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
     paddingBottom: 2, // optical alignment with title baseline
+  },
+  settingsButton: {
+    fontSize: 20,
+    color: "#555",
+    paddingBottom: 1,
   },
   listContent: {
     paddingVertical: 12,

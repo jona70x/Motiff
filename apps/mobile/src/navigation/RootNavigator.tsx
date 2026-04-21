@@ -15,6 +15,7 @@ import { SyllabusUploadScreen } from "../screens/SyllabusUploadScreen";
 import { SyllabusCandidatesScreen } from "../screens/SyllabusCandidatesScreen";
 import { FocusTimerScreen } from "../screens/FocusTimerScreen";
 import { ProgressScreen } from "../screens/ProgressScreen";
+import { SettingsScreen } from "../screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -92,6 +93,7 @@ export function RootNavigator() {
             <Stack.Screen name="SyllabusUpload">{(props) => <SyllabusUploadScreen {...props} />}</Stack.Screen>
             <Stack.Screen name="SyllabusCandidates">{(props) => <SyllabusCandidatesScreen {...props} />}</Stack.Screen>
             <Stack.Screen name="FocusTimer">{(props) => <FocusTimerScreen {...props} />}</Stack.Screen>
+            <Stack.Screen name="Settings">{(props) => <SettingsScreen {...props} />}</Stack.Screen>
           </>
         )}
       </Stack.Navigator>
