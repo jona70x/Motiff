@@ -9,6 +9,7 @@ import { AddCourseScreen } from "../screens/AddCourseScreen";
 import { CourseDetailScreen } from "../screens/CourseDetailScreen";
 import { AddAssignmentScreen } from "../screens/AddAssignmentScreen";
 import { TodayScreen } from "../screens/TodayScreen";
+import { PlanScreen } from "../screens/PlanScreen";
 import { AssignmentDetailScreen } from "../screens/AssignmentDetailScreen";
 import { SyllabusUploadScreen } from "../screens/SyllabusUploadScreen";
 import { SyllabusCandidatesScreen } from "../screens/SyllabusCandidatesScreen";
@@ -32,6 +33,13 @@ function MainTabs() {
         component={TodayScreen}
         options={{
           tabBarIcon: ({ color }) => <TabIcon label="●" color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Plan"
+        component={PlanScreen}
+        options={{
+          tabBarIcon: ({ color }) => <TabIcon label="▦" color={color} />,
         }}
       />
       <Tab.Screen

@@ -8,6 +8,12 @@
 export const DEFAULT_EST_MINUTES = 25;
 
 /**
+ * Default daily study budget in minutes.
+ * Used by PlanScreen until the user configures their own value in Settings (S3-4).
+ */
+export const DEFAULT_DAILY_BUDGET_MINUTES = 120;
+
+/**
  * Minimum input shape required by the plan generator.
  * Matches a subset of the Assignment row from Supabase.
  */
