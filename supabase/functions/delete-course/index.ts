@@ -4,14 +4,18 @@
  * Performs a full, reliable course deletion:
  *   1. Authenticates the caller via JWT.
  *   2. Verifies the course belongs to that user (ownership check via user-scoped query).
- *   3. Lists all Supabase Storage objects under syllabi/{userId}/{courseId}/.
- *   4. Removes those storage objects using the service-role client.
- *   5. Deletes the course row; FK ON DELETE CASCADE handles all child rows
+ *   3. Lists and removes ALL Supabase Storage objects under syllabi/{userId}/{courseId}/,
+ *      paginating through the list API in case there are more than 1000 files.
+ *   4. Deletes the course row; FK ON DELETE CASCADE handles all child rows
  *      (assignments, syllabus_uploads, syllabus_candidates, focus_sessions, plan_blocks).
  *
  * The client cannot reliably do steps 3–4 because a mid-delete network drop
  * would leave orphaned storage objects. Doing it server-side is atomic from
  * the user's perspective (DR-016).
+ *
+ * Error messages returned to the client are intentionally generic to avoid
+ * leaking Postgres schema details (column names, position offsets, etc.).
+ * Detailed errors are logged server-side via console.error.
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -20,7 +24,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 type DeleteResponse =
   | { ok: true; filesRemoved: number }
-  | { ok: false; reason: "unauthorized" | "not_found" | "forbidden" | "error"; message?: string };
+  | { ok: false; reason: "unauthorized" | "not_found" | "error"; message: string };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +38,45 @@ function json<T>(body: T, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+/**
+ * Lists every storage object under a folder prefix by paginating through
+ * 1000-item pages until the API returns fewer than the page limit.
+ *
+ * @param client       - Service-role Supabase client (bypasses storage RLS).
+ * @param bucket       - Storage bucket name.
+ * @param folderPath   - Folder path to list (without trailing slash).
+ * @returns Array of fully-qualified object paths, or throws on list error.
+ */
+async function listAllStorageObjects(
+  client: ReturnType<typeof createClient>,
+  bucket: string,
+  folderPath: string
+): Promise<string[]> {
+  const PAGE_SIZE = 1000;
+  const allPaths: string[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await client
+      .storage
+      .from(bucket)
+      .list(folderPath, { limit: PAGE_SIZE, offset });
+
+    if (error) throw new Error(`Storage list failed: ${error.message}`);
+    if (!data || data.length === 0) break;
+
+    for (const file of data) {
+      allPaths.push(`${folderPath}/${file.name}`);
+    }
+
+    // If we received fewer than PAGE_SIZE items, we've reached the end.
+    if (data.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  return allPaths;
 }
 
 // ── Handler ────────────────────────────────────────────────────────────────────
@@ -51,14 +94,15 @@ Deno.serve(async (req: Request) => {
       return json<DeleteResponse>({ ok: false, reason: "unauthorized", message: "Missing Authorization header" }, 401);
     }
 
-    // Service-role client: used for storage operations and the final delete.
-    // These bypass RLS intentionally — ownership is validated via the user client first.
+    // Service-role client: bypasses RLS for storage operations and the final DB delete.
+    // Ownership is validated via the user-scoped client below before this is used.
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // User-scoped client: used only for auth verification and ownership check.
+    // User-scoped client: used only for auth verification and the ownership check.
+    // RLS on the courses table ensures the caller cannot enumerate other users' courses.
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -78,7 +122,8 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Ownership check ─────────────────────────────────────────────────────────
-    // Use the user-scoped client so RLS ensures the user can only see their own courses.
+    // RLS allows the user-scoped client to SELECT only their own courses.
+    // A non-existent or foreign-user course returns PGRST116 → 404.
     const { data: course, error: courseError } = await userClient
       .from("courses")
       .select("id")
@@ -89,64 +134,62 @@ Deno.serve(async (req: Request) => {
       return json<DeleteResponse>({ ok: false, reason: "not_found", message: "Course not found" }, 404);
     }
     if (courseError) {
-      return json<DeleteResponse>({ ok: false, reason: "error", message: courseError.message }, 500);
+      // Log the raw Postgres error server-side; return a generic message to the client.
+      console.error("delete-course ownership check error:", courseError.message);
+      return json<DeleteResponse>({ ok: false, reason: "error", message: "Internal error" }, 500);
     }
 
     // ── Storage cleanup ─────────────────────────────────────────────────────────
-    // Files are stored at syllabi/{userId}/{courseId}/{timestamp}.ext
-    const folderPrefix = `${userId}/${course_id}/`;
-
-    const { data: fileList, error: listError } = await serviceClient
-      .storage
-      .from("syllabi")
-      .list(`${userId}/${course_id}`, { limit: 1000 });
-
-    if (listError) {
-      // Non-fatal: log and continue. Storage objects may simply not exist
-      // (e.g. course was created but no syllabus ever uploaded).
-      console.error("Storage list error:", listError.message);
-    }
-
+    // Files are stored at syllabi/{userId}/{courseId}/{timestamp}.ext.
+    // Paginate through the list API so courses with >1000 files are fully cleaned up.
+    const folderPath = `${userId}/${course_id}`;
     let filesRemoved = 0;
-    if (fileList && fileList.length > 0) {
-      const paths = fileList.map((f) => `${folderPrefix}${f.name}`);
 
-      const { error: removeError } = await serviceClient
-        .storage
-        .from("syllabi")
-        .remove(paths);
+    try {
+      const paths = await listAllStorageObjects(serviceClient, "syllabi", folderPath);
 
-      if (removeError) {
-        // Abort before deleting the DB row so the caller can retry.
-        return json<DeleteResponse>(
-          { ok: false, reason: "error", message: `Storage cleanup failed: ${removeError.message}` },
-          500
-        );
+      if (paths.length > 0) {
+        const { error: removeError } = await serviceClient
+          .storage
+          .from("syllabi")
+          .remove(paths);
+
+        if (removeError) {
+          // Abort before deleting the DB row so the caller can retry and recover.
+          console.error("delete-course storage remove error:", removeError.message);
+          return json<DeleteResponse>(
+            { ok: false, reason: "error", message: "Failed to remove course files. Please try again." },
+            500
+          );
+        }
+        filesRemoved = paths.length;
       }
-      filesRemoved = paths.length;
+    } catch (storageErr) {
+      // List pagination failure — the folder may simply not exist (no syllabi uploaded).
+      // Log and continue; missing storage objects are not a fatal condition for the delete.
+      console.error("delete-course storage list error:", storageErr instanceof Error ? storageErr.message : storageErr);
     }
 
     // ── Delete course row ───────────────────────────────────────────────────────
-    // Service-role client bypasses RLS; ownership was already verified above.
-    // ON DELETE CASCADE handles: assignments, syllabus_uploads, syllabus_candidates,
-    // focus_sessions, plan_blocks.
+    // Service-role client is used here (bypasses RLS); ownership was verified above.
+    // Filtering by user_id adds a belt-and-suspenders guard against accidental deletions.
     const { error: deleteError } = await serviceClient
       .from("courses")
       .delete()
       .eq("id", course_id)
-      .eq("user_id", userId); // belt-and-suspenders: still filter by user_id
+      .eq("user_id", userId);
 
     if (deleteError) {
+      console.error("delete-course DB delete error:", deleteError.message);
       return json<DeleteResponse>(
-        { ok: false, reason: "error", message: deleteError.message },
+        { ok: false, reason: "error", message: "Internal error" },
         500
       );
     }
 
     return json<DeleteResponse>({ ok: true, filesRemoved });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("delete-course error:", message);
-    return json<DeleteResponse>({ ok: false, reason: "error", message }, 500);
+    console.error("delete-course unhandled error:", err instanceof Error ? err.message : err);
+    return json<DeleteResponse>({ ok: false, reason: "error", message: "Internal error" }, 500);
   }
 });

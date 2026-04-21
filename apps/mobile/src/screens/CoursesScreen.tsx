@@ -31,45 +31,14 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { getCourses, completeCourse, uncompleteCourse, deleteCourseWithStorage } from "../lib/api/courses";
 import type { Course } from "../lib/schema";
 import { supabase } from "../lib/supabase";
+import { buildListItems, type CourseListItem } from "../lib/courseLifecycle";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Props = NativeStackScreenProps<any, "Courses">;
 
-/**
- * A flat list item — either a section header or a course card.
- * Avoids two separate FlatLists which complicates scroll behaviour.
- */
-type ListItem =
-  | { kind: "header"; label: string }
-  | { kind: "course"; course: Course };
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-/**
- * Splits courses into active and completed and flattens them into a single
- * list with section headers interspersed. Returns the flat array for FlatList.
- */
-function buildListItems(courses: Course[]): ListItem[] {
-  const active    = courses.filter((c) => !c.completed_at);
-  const completed = courses.filter((c) => !!c.completed_at);
-
-  const items: ListItem[] = [];
-
-  if (active.length > 0 || completed.length === 0) {
-    // Always show an "Active" header when there are active courses,
-    // or when both buckets are empty (empty state is rendered inside the list).
-    items.push({ kind: "header", label: "Active" });
-    active.forEach((c) => items.push({ kind: "course", course: c }));
-  }
-
-  if (completed.length > 0) {
-    items.push({ kind: "header", label: "Completed" });
-    completed.forEach((c) => items.push({ kind: "course", course: c }));
-  }
-
-  return items;
-}
+// Re-alias so internal usage stays terse
+type ListItem = CourseListItem;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
