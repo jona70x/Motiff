@@ -82,7 +82,11 @@ function TabIcon({ label, color }: { label: string; color: string }) {
 
 export function RootNavigator() {
   const { session, loading, recoveryMode } = useAuthSession();
-  const { onboardingChecked, onboardingDone, completeOnboarding } = useOnboarding();
+  // Pass the user ID so the flag is keyed per-user — prevents a prior user's
+  // completed flag from suppressing the carousel for a new account on the same device.
+  const { onboardingChecked, onboardingDone, completeOnboarding } = useOnboarding(
+    session?.user.id ?? null
+  );
 
   // Wait for both the session and the onboarding flag before rendering anything.
   // This prevents a flash between the loading spinner and the wrong screen.
