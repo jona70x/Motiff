@@ -5,6 +5,8 @@ export const courseSchema = z.object({
   user_id: z.string().uuid(),
   title: z.string().min(1, "Course title is required").max(255),
   term: z.string().optional().nullable(),
+  /** ISO-8601 timestamp when the user marked this course as finished; null = active. */
+  completed_at: z.string().datetime().optional().nullable(),
   created_at: z.string().datetime(),
 });
 

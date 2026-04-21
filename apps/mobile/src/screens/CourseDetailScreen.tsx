@@ -1,9 +1,11 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -12,12 +14,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { getCourseById } from "../lib/api/courses";
+import {
+  getCourseById,
+  completeCourse,
+  uncompleteCourse,
+  deleteCourseWithStorage,
+} from "../lib/api/courses";
 import { getAssignmentsByCourse } from "../lib/api/assignments";
 import { getUploadsByCourse, deleteUpload } from "../lib/api/uploads";
 import { triggerExtraction } from "../lib/api/extraction";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
 import { analytics } from "../lib/analytics";
+import { supabase } from "../lib/supabase";
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "No due date";
@@ -58,12 +66,14 @@ const STATUS_COLOR: Record<SyllabusUpload["status"], string> = {
 
 export function CourseDetailScreen({ route, navigation }: Props) {
   const courseId = (route.params as any)?.courseId || "";
-  const [course, setCourse] = useState<Course | null>(null);
+  const [course, setCourse]     = useState<Course | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [uploads, setUploads] = useState<SyllabusUpload[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [uploads, setUploads]   = useState<SyllabusUpload[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [extractingId, setExtractingId] = useState<string | null>(null);
+  // True while a complete/delete operation is in flight
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -169,6 +179,92 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     []
   );
 
+  /**
+   * Toggles the course between active and completed.
+   * Navigates back after completion so the Courses list reflects the change immediately.
+   */
+  const handleToggleComplete = useCallback(async () => {
+    if (!course || lifecycleBusy) return;
+    setLifecycleBusy(true);
+
+    const nowCompleting = !course.completed_at;
+    try {
+      if (nowCompleting) {
+        await completeCourse(course.id);
+      } else {
+        await uncompleteCourse(course.id);
+      }
+      // Reload to surface the updated completed_at in the header badge.
+      await loadData();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not update course.");
+    } finally {
+      setLifecycleBusy(false);
+    }
+  }, [course, lifecycleBusy, loadData]);
+
+  /**
+   * Confirms deletion with the user, then calls the Edge Function.
+   * Navigates back to the Courses list on success.
+   */
+  const handleDeleteCourse = useCallback(() => {
+    if (!course || lifecycleBusy) return;
+
+    Alert.alert(
+      "Delete course?",
+      `"${course.title}" and all its assignments and syllabi will be permanently deleted. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setLifecycleBusy(true);
+            try {
+              const session = await supabase.auth.getSession();
+              const token = session.data.session?.access_token;
+              if (!token) throw new Error("Not authenticated");
+              await deleteCourseWithStorage(course.id, token);
+              navigation.goBack();
+            } catch (err) {
+              Alert.alert("Delete failed", err instanceof Error ? err.message : "Unknown error");
+              setLifecycleBusy(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [course, lifecycleBusy, navigation]);
+
+  /**
+   * Opens a native action sheet / alert with course-level actions.
+   */
+  const handleCourseMenu = useCallback(() => {
+    if (!course) return;
+    const isCompleted  = !!course.completed_at;
+    const toggleLabel  = isCompleted ? "Reopen course" : "Mark as completed";
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [toggleLabel, "Delete course", "Cancel"],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 2,
+        },
+        (idx) => {
+          if (idx === 0) handleToggleComplete();
+          if (idx === 1) handleDeleteCourse();
+        }
+      );
+    } else {
+      Alert.alert(course.title, undefined, [
+        { text: toggleLabel, onPress: handleToggleComplete },
+        { text: "Delete course", style: "destructive", onPress: handleDeleteCourse },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    }
+  }, [course, handleToggleComplete, handleDeleteCourse]);
+
   const listData = useMemo<ListItem[]>(() => {
     if (!course) return [];
     return [
@@ -191,6 +287,11 @@ export function CourseDetailScreen({ route, navigation }: Props) {
           <View style={styles.courseInfo}>
             <Text style={styles.courseTitle}>{course?.title}</Text>
             {course?.term && <Text style={styles.courseTerm}>{course.term}</Text>}
+            {course?.completed_at && (
+              <Text style={styles.courseCompletedNote}>
+                Completed on {new Date(course.completed_at).toLocaleDateString()}
+              </Text>
+            )}
           </View>
         );
       case "assignmentsHeader":
@@ -332,6 +433,25 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
           <Text style={styles.backButton}>← Back</Text>
         </Pressable>
+
+        {/* Right side: completed badge + action menu */}
+        <View style={styles.headerRight}>
+          {course.completed_at && (
+            <Text style={styles.completedBadge}>Completed</Text>
+          )}
+          {lifecycleBusy ? (
+            <ActivityIndicator size="small" color="#888" />
+          ) : (
+            <Pressable
+              onPress={handleCourseMenu}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Course options"
+            >
+              <Text style={styles.menuTrigger}>•••</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <FlatList
@@ -369,11 +489,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e6",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  completedBadge: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#888",
+    backgroundColor: "#f0f0f5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  menuTrigger: {
+    fontSize: 16,
+    color: "#bbb",
+    letterSpacing: 1,
+    padding: 4,
   },
   backButton: {
     fontSize: 16,
@@ -396,6 +539,11 @@ const styles = StyleSheet.create({
   courseTerm: {
     fontSize: 14,
     color: "#555",
+  },
+  courseCompletedNote: {
+    fontSize: 12,
+    color: "#aaa",
+    marginTop: 4,
   },
   sectionHeader: {
     flexDirection: "row",
