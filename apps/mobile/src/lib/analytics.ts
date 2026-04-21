@@ -57,4 +57,12 @@ export const analytics = {
   progressScreenViewed() {
     client.capture("progress_screen_viewed", {});
   },
+
+  // ── Plan ───────────────────────────────────────────────────────────────────
+  planScreenViewed(props: { blockCount: number; budgetMinutes: number }) {
+    client.capture("plan_screen_viewed", props);
+  },
+  planRegenerated(props: { blockCount: number; budgetMinutes: number }) {
+    client.capture("plan_regenerated", props);
+  },
 };
