@@ -2,14 +2,15 @@
  * @module navigation/RootNavigator
  * Root navigation tree for Motiff.
  *
- * Auth routing logic:
- *   - `loading`      → full-screen spinner (resolving initial session)
- *   - `recoveryMode` → ResetPasswordScreen only (user opened a password-reset link)
- *   - `session null` → SignInScreen + ForgotPasswordScreen
- *   - `session set`  → MainTabs + all app stack screens
+ * Routing priority (evaluated top to bottom):
+ *   1. `loading`            → full-screen spinner (resolving session + onboarding flag)
+ *   2. `recoveryMode`       → ResetPasswordScreen only (password-reset deep link)
+ *   3. `session && !onboarding` → OnboardingScreen (first launch, authenticated users only)
+ *   4. `session null`       → SignInScreen + ForgotPasswordScreen
+ *   5. `session set`        → MainTabs + all app stack screens
  *
- * Deep-link handling lives in useAuthSession (lib/auth.ts); this component
- * only reacts to the state that hook exposes.
+ * Onboarding is gated on an active session so that new users sign up first,
+ * then see the carousel — avoiding the awkward pattern of onboarding before auth.
  */
 
 import { NavigationContainer } from "@react-navigation/native";
@@ -17,6 +18,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAuthSession } from "../lib/auth";
+import { useOnboarding } from "../lib/onboarding";
+import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { SignInScreen } from "../screens/SignInScreen";
 import { ForgotPasswordScreen } from "../screens/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "../screens/ResetPasswordScreen";
@@ -79,14 +82,23 @@ function TabIcon({ label, color }: { label: string; color: string }) {
 
 export function RootNavigator() {
   const { session, loading, recoveryMode } = useAuthSession();
+  const { onboardingChecked, onboardingDone, completeOnboarding } = useOnboarding();
 
-  // Resolve initial session before rendering any screen.
-  if (loading) {
+  // Wait for both the session and the onboarding flag before rendering anything.
+  // This prevents a flash between the loading spinner and the wrong screen.
+  if (loading || !onboardingChecked) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator />
       </View>
     );
+  }
+
+  // Onboarding is shown only to authenticated users who haven't seen the carousel.
+  // Users sign up first, then see onboarding — this ensures they have an account
+  // before we ask for notification permissions.
+  if (session && !onboardingDone) {
+    return <OnboardingScreen onComplete={completeOnboarding} />;
   }
 
   return (
