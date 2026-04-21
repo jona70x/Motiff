@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { Linking } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { parseAuthFragment } from "./authHelpers";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -54,14 +55,7 @@ export type AuthState = {
  * @param url - Full deep link URL including fragment.
  */
 async function handleAuthDeepLink(url: string): Promise<void> {
-  // Only process URLs that look like our auth callback
-  if (!url.includes("auth/callback") && !url.includes("reset-password")) return;
-
-  const fragment = url.split("#")[1] ?? "";
-  if (!fragment) return;
-
-  const params = Object.fromEntries(new URLSearchParams(fragment));
-  const { access_token, refresh_token } = params;
+  const { access_token, refresh_token } = parseAuthFragment(url);
 
   if (access_token && refresh_token) {
     // setSession triggers onAuthStateChange with PASSWORD_RECOVERY or SIGNED_IN
@@ -93,6 +87,11 @@ export function useAuthSession(): AuthState {
     // ── Deep link wiring ──────────────────────────────────────────────────────
 
     // Cold start: app launched directly by tapping an auth email link.
+    // getInitialURL() and getSession() run concurrently. If getInitialURL()
+    // resolves first and calls setSession(), the resulting onAuthStateChange
+    // event (PASSWORD_RECOVERY / SIGNED_IN) will arrive before getSession()
+    // resolves — that's fine because the event handler always wins and
+    // getSession() is only used as a fallback to clear `loading`.
     Linking.getInitialURL().then((url) => {
       if (url) handleAuthDeepLink(url);
     });
@@ -143,9 +142,9 @@ export function useAuthSession(): AuthState {
         default:
           // SIGNED_IN, TOKEN_REFRESHED, INITIAL_SESSION, EMAIL_CONFIRM, etc.
           setSession(next);
-          // If loading hasn't cleared yet (setSession from getSession lost the race),
-          // ensure loading is cleared here too.
-          if (loading) setLoading(false);
+          // setLoading(false) is idempotent — safe to call even if getSession()
+          // already cleared it. Avoids a stale closure on the `loading` state var.
+          setLoading(false);
       }
     });
 

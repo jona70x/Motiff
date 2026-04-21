@@ -1,8 +1,7 @@
 /**
  * Tests for S4-2 auth-hardening logic.
  *
- * The two areas exercised here are pure functions extracted from the
- * auth module and the screen-level validation rules:
+ * The two areas exercised here are pure functions from authHelpers.ts:
  *
  *   1. Deep-link URL parsing — extracting access/refresh tokens and the
  *      auth type from a motiff://auth/callback#... URL.
@@ -10,26 +9,9 @@
  *      before calling supabase.auth.updateUser().
  */
 
-// ── Deep-link token extraction ─────────────────────────────────────────────────
+import { parseAuthFragment, validatePasswordReset } from "./authHelpers";
 
-/**
- * Mirrors the URL parsing logic in auth.ts handleAuthDeepLink().
- * Extracted here so it can be unit-tested without mocking the Supabase SDK.
- */
-function parseAuthFragment(url: string): {
-  access_token?: string;
-  refresh_token?: string;
-  type?: string;
-} {
-  if (!url.includes("auth/callback") && !url.includes("reset-password")) return {};
-  const fragment = url.split("#")[1] ?? "";
-  if (!fragment) return {};
-  return Object.fromEntries(new URLSearchParams(fragment)) as {
-    access_token?: string;
-    refresh_token?: string;
-    type?: string;
-  };
-}
+// ── Deep-link token extraction ─────────────────────────────────────────────────
 
 describe("parseAuthFragment", () => {
   const RESET_URL =
@@ -72,24 +54,23 @@ describe("parseAuthFragment", () => {
     const result = parseAuthFragment(url);
     expect(result.access_token).toBe("x");
   });
+
+  it("returns an empty object for an unknown type", () => {
+    // e.g. a future Supabase link type we don't handle yet
+    const url = "motiff://auth/callback#access_token=x&refresh_token=y&type=magiclink";
+    const result = parseAuthFragment(url);
+    expect(result).toEqual({});
+  });
+
+  it("rejects a URL that merely contains auth/callback as a substring", () => {
+    // Must start with motiff:// — not just contain the path segment
+    const url = "https://evil.example.com/motiff://auth/callback#access_token=x&type=recovery";
+    const result = parseAuthFragment(url);
+    expect(result).toEqual({});
+  });
 });
 
 // ── Password validation (ResetPasswordScreen) ──────────────────────────────────
-
-const MIN_PASSWORD_LENGTH = 8;
-
-/**
- * Mirrors the validate() function in ResetPasswordScreen.
- */
-function validatePasswordReset(password: string, confirm: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
-  }
-  if (password !== confirm) {
-    return "Passwords don't match.";
-  }
-  return null;
-}
 
 describe("validatePasswordReset", () => {
   it("returns null for valid matching passwords at minimum length", () => {

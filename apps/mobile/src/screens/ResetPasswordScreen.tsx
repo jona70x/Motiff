@@ -30,9 +30,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-
-// Password must be at least 8 characters — mirrors Supabase's minimum.
-const MIN_PASSWORD_LENGTH = 8;
+import { MIN_PASSWORD_LENGTH, validatePasswordReset } from "../lib/authHelpers";
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -41,22 +39,6 @@ export function ResetPasswordScreen() {
   const [confirm, setConfirm]       = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState<string | null>(null);
-
-  // ── Validation ────────────────────────────────────────────────────────────
-
-  /**
-   * Returns a human-readable validation error, or null if inputs are valid.
-   * Called on submit to avoid showing red text as the user types.
-   */
-  function validate(): string | null {
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
-    }
-    if (password !== confirm) {
-      return "Passwords don't match.";
-    }
-    return null;
-  }
 
   const canSubmit = !submitting && password.length >= MIN_PASSWORD_LENGTH && confirm.length > 0;
 
@@ -70,7 +52,7 @@ export function ResetPasswordScreen() {
   async function handleSubmit() {
     if (!canSubmit) return;
 
-    const validationError = validate();
+    const validationError = validatePasswordReset(password, confirm);
     if (validationError) {
       setError(validationError);
       return;
