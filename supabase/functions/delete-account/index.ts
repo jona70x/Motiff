@@ -3,6 +3,8 @@
  *
  * Deletion order (safe for CASCADE constraints):
  *   1. Storage objects in the `syllabi` bucket under the user's path prefix.
+ *      Files are stored at `<userId>/<courseId>/<filename>`, so the sweep
+ *      recursively walks subdirectories to collect all leaf objects.
  *   2. auth.users row — this triggers ON DELETE CASCADE through:
  *        auth.users → profiles → courses → assignments
  *                                        → syllabus_uploads
@@ -11,8 +13,9 @@
  *                                        → plan_blocks
  *                                        → llm_usage
  *
- * Storage is removed before the DB row to prevent orphaned files. If storage
- * removal fails the function aborts before touching the DB, allowing safe retry.
+ * Storage is removed before the DB row to prevent orphaned files. Any error
+ * during the storage sweep causes the function to abort and return 500,
+ * leaving the DB intact so the caller can retry safely.
  *
  * Deploy:
  *   npx supabase functions deploy delete-account --no-verify-jwt
@@ -27,6 +30,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 type DeleteResponse =
@@ -36,6 +40,11 @@ type DeleteResponse =
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Only POST is accepted; reject everything else with 405 before touching auth.
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
@@ -65,18 +74,18 @@ Deno.serve(async (req: Request) => {
     );
 
     // ── Remove storage objects ──────────────────────────────────────────────────
-    // All syllabus files for a user are stored under `<userId>/` in the syllabi bucket.
-    const storageObjects = await listAllStorageObjects(serviceClient, "syllabi", `${userId}/`);
+    // Files are stored at `<userId>/<courseId>/<filename>` — a two-level hierarchy.
+    // listAllStorageObjects recurses into subdirectories to collect every leaf file.
+    // If any list call fails it throws, aborting before the DB deletion.
+    const storagePaths = await listAllStorageObjects(serviceClient, "syllabi", `${userId}/`);
 
-    if (storageObjects.length > 0) {
-      const paths = storageObjects.map((o) => o.name);
+    if (storagePaths.length > 0) {
       const { error: removeErr } = await serviceClient
         .storage
         .from("syllabi")
-        .remove(paths);
+        .remove(storagePaths);
 
       if (removeErr) {
-        // Abort before touching the DB so the caller can retry safely.
         console.error("delete-account storage remove error:", removeErr.message);
         return json<DeleteResponse>({ ok: false, message: "Internal error" }, 500);
       }
@@ -106,19 +115,34 @@ function json<T>(body: T, status = 200): Response {
   });
 }
 
-type StorageObject = { name: string };
+type StorageItem = {
+  id:       string | null;
+  name:     string;
+  metadata: Record<string, unknown> | null;
+};
 
 /**
- * Lists all objects under `prefix` in `bucket`, paginating through the
- * Supabase 1000-item-per-page limit until the full list is collected.
+ * Recursively lists every file object under `prefix` in `bucket`.
+ *
+ * Supabase's list() returns only immediate children. Items with `id === null`
+ * are folder placeholders — we recurse into them. Items with a non-null `id`
+ * are real files and are added to the result.
+ *
+ * Throws on any list failure so the caller aborts before touching the DB,
+ * avoiding partial cleanup that would leave orphaned storage files.
+ *
+ * @param client - Service-role Supabase client (bypasses storage RLS).
+ * @param bucket - Storage bucket name.
+ * @param prefix - Path prefix to list, including trailing slash (e.g. "userId/").
+ * @returns Fully-qualified paths of every file under the prefix.
  */
 async function listAllStorageObjects(
   client: ReturnType<typeof createClient>,
   bucket: string,
   prefix: string
-): Promise<StorageObject[]> {
+): Promise<string[]> {
   const PAGE_SIZE = 1000;
-  const all: StorageObject[] = [];
+  const allPaths: string[] = [];
   let offset = 0;
 
   while (true) {
@@ -127,17 +151,31 @@ async function listAllStorageObjects(
       .list(prefix, { limit: PAGE_SIZE, offset });
 
     if (error) {
-      console.error("delete-account storage list error:", error.message);
-      break;
+      // Throw so the outer handler returns 500 and the DB row is NOT deleted.
+      // A transient failure here would otherwise leave orphaned storage objects.
+      throw new Error(`Storage list failed at '${prefix}': ${error.message}`);
     }
 
-    const page = (data ?? []) as StorageObject[];
-    // Prefix the names with the folder path so remove() gets full object paths.
-    all.push(...page.map((o) => ({ name: `${prefix}${o.name}` })));
+    const page = (data ?? []) as StorageItem[];
+
+    for (const item of page) {
+      if (item.id === null) {
+        // Folder placeholder — recurse to collect leaf files inside it.
+        const subPaths = await listAllStorageObjects(
+          client,
+          bucket,
+          `${prefix}${item.name}/`
+        );
+        allPaths.push(...subPaths);
+      } else {
+        // Real file — add its fully-qualified path.
+        allPaths.push(`${prefix}${item.name}`);
+      }
+    }
 
     if (page.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
 
-  return all;
+  return allPaths;
 }
