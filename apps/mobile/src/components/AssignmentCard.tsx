@@ -90,7 +90,7 @@ export function AssignmentCard({
       accessibilityRole="button"
       accessibilityLabel={assignment.title}
     >
-      {/* Gradient urgency rail — absolutely positioned, clipped by card overflow:hidden */}
+      {/* Gradient urgency rail — sibling to content, clipped by card overflow:hidden */}
       <LinearGradient
         colors={railColors}
         start={{ x: 0, y: 0 }}
@@ -185,6 +185,7 @@ export function AssignmentCard({
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection:    "row",
     backgroundColor:  C.surface,
     marginHorizontal: 16,
     marginVertical:   5,
@@ -197,19 +198,17 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.75,
   },
-  // Absolutely positioned gradient rail — 5px wide, full card height
+  // Gradient urgency rail — flex sibling, full card height via alignSelf stretch
   rail: {
-    position: "absolute",
-    left:     0,
-    top:      0,
-    bottom:   0,
-    width:    5,
+    width:     5,
+    flexShrink: 0,
   },
   content: {
+    flex:          1,
     paddingTop:    14,
     paddingRight:  16,
     paddingBottom: 14,
-    paddingLeft:   22,
+    paddingLeft:   17,
     gap:           8,
   },
   topRow: {
