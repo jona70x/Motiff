@@ -72,12 +72,26 @@ export function ProfileScreen({ navigation }: Props) {
 
   if (loadError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Failed to load profile.</Text>
-        <Pressable style={styles.retryButton} onPress={load}>
-          <Text style={styles.retryText}>Retry</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView style={styles.root} edges={["top"]}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Icons.chevronLeft size={24} color={C.textSub} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load profile.</Text>
+          <Pressable style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
