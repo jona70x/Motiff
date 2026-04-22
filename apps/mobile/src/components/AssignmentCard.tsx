@@ -1,18 +1,18 @@
 /**
  * @module components/AssignmentCard
- * S5-2 card design: gradient urgency rail, Bricolage title, urgency-matched
- * due pill, optional focus progress bar, gradient Start Focus button.
+ * S5-2 card design: gradient urgency rail, two-column layout (info left,
+ * stacked action buttons right), pulsing rail for overdue items.
  */
 
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icons } from "../lib/icons";
-
-const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
 import { formatRelativeDue, isOverdue, bucketAssignment } from "../lib/time";
 import type { AssignmentWithCourse } from "../lib/api/today";
 import { C, F, G, R, shadow } from "../theme";
+
+const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
 
 // ── Urgency helpers ────────────────────────────────────────────────────────────
 
@@ -58,13 +58,16 @@ type Props = {
   onPress?: () => void;
   onStartFocus: () => void;
   onComplete: () => void;
+  /** When provided, a delete button appears in the action column. */
+  onDelete?: () => void;
 };
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
 /**
- * AssignmentCard renders one to-do item with an urgency rail, due-date pill,
- * optional focus progress bar, and action buttons.
+ * AssignmentCard renders one to-do item with an urgency rail, two-column layout
+ * (text info on the left, stacked action buttons on the right), and an optional
+ * pulsing animation on the rail for overdue items.
  */
 export function AssignmentCard({
   assignment,
@@ -73,20 +76,23 @@ export function AssignmentCard({
   onPress,
   onStartFocus,
   onComplete,
+  onDelete,
 }: Props) {
-  const courseTitle  = assignment.course?.title ?? "Unknown course";
-  const relativeDue  = formatRelativeDue(assignment.due_at);
-  const urgency      = getUrgency(assignment.due_at);
-  const pillStyle    = PILL[urgency];
-  const railColors   = RAIL[urgency];
-  const badgeStyle   = assignment.kind
+  const courseTitle = assignment.course?.title ?? "Unknown course";
+  const relativeDue = formatRelativeDue(assignment.due_at);
+  const urgency     = getUrgency(assignment.due_at);
+  const pillStyle   = PILL[urgency];
+  const railColors  = RAIL[urgency];
+  const badgeStyle  = assignment.kind
     ? (KIND_BADGE[assignment.kind.toLowerCase()] ?? null)
     : null;
-  const est          = assignment.est_minutes ?? null;
-  // Show est_minutes if available, otherwise fall back to plan-allocated minutes
-  const timeLabel    = est !== null ? est : (allocatedMinutes ?? null);
+  const est         = assignment.est_minutes ?? null;
+  const timeLabel   = est !== null ? est : (allocatedMinutes ?? null);
 
-  // Pulsing opacity animation — only active for overdue items
+  const showProgress = focusedMinutes > 0 && est !== null && est > 0;
+  const progress     = showProgress ? Math.min(focusedMinutes / est, 1) : 0;
+
+  // Pulsing opacity on the urgency rail for overdue items
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     if (urgency !== "overdue") {
@@ -103,12 +109,10 @@ export function AssignmentCard({
     return () => loop.stop();
   }, [urgency, pulseAnim]);
 
-  const showProgress = focusedMinutes > 0 && est !== null && est > 0;
-  const progress     = showProgress ? Math.min(focusedMinutes / est, 1) : 0;
-
   const CheckIcon = Icons.check;
   const PlayIcon  = Icons.play;
   const ClockIcon = Icons.clock;
+  const TrashIcon = Icons.trash;
 
   return (
     <Pressable
@@ -125,70 +129,63 @@ export function AssignmentCard({
         style={[styles.rail, { opacity: pulseAnim }]}
       />
 
-      {/* Card body */}
+      {/* Card body: left info + right button column */}
       <View style={styles.content}>
 
-        {/* Top row: course label + kind badge */}
-        <View style={styles.topRow}>
-          <Text style={styles.courseLabel} numberOfLines={1}>{courseTitle}</Text>
-          {badgeStyle && assignment.kind ? (
-            <View style={[styles.kindBadge, { backgroundColor: badgeStyle.bg }]}>
-              <Text style={[styles.kindText, { color: badgeStyle.text }]}>
-                {assignment.kind.toLowerCase()}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        {/* ── Left: text info ── */}
+        <View style={styles.left}>
 
-        {/* Assignment title — Bricolage Grotesque */}
-        <Text style={styles.title}>{assignment.title}</Text>
+          {/* Course label + kind badge */}
+          <View style={styles.courseRow}>
+            <Text style={styles.courseLabel} numberOfLines={1}>{courseTitle}</Text>
+            {badgeStyle && assignment.kind ? (
+              <View style={[styles.kindBadge, { backgroundColor: badgeStyle.bg }]}>
+                <Text style={[styles.kindText, { color: badgeStyle.text }]}>
+                  {assignment.kind.toLowerCase()}
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
-        {/* Meta row: due pill + estimated time */}
-        <View style={styles.metaRow}>
+          {/* Assignment title */}
+          <Text style={styles.title} numberOfLines={3}>{assignment.title}</Text>
+
+          {/* Due pill */}
           <View style={[styles.pill, { backgroundColor: pillStyle.bg }]}>
             <View style={[styles.dot, { backgroundColor: pillStyle.dot }]} />
             <Text style={[styles.pillText, { color: pillStyle.text }]}>{relativeDue}</Text>
           </View>
+
+          {/* Time estimate */}
           {timeLabel !== null && (
             <View style={styles.estRow}>
-              <ClockIcon size={11} color={C.timeText} />
-              <Text style={styles.est}>{timeLabel} min</Text>
+              <ClockIcon size={10} color={C.timeText} />
+              <Text style={styles.est}>{timeLabel} min est.</Text>
+            </View>
+          )}
+
+          {/* Focus progress bar */}
+          {showProgress && (
+            <View style={styles.progBlock}>
+              <View style={styles.progTrack}>
+                <LinearGradient
+                  colors={G.progFill}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.progFill, { width: `${Math.round(progress * 100)}%` as any }]}
+                />
+              </View>
+              <View style={styles.progNote}>
+                <Text style={styles.progNoteText}>{focusedMinutes}/{est} min</Text>
+                <Text style={styles.progNoteText}>{Math.round(progress * 100)}%</Text>
+              </View>
             </View>
           )}
         </View>
 
-        {/* Focus progress bar (only when focusedMinutes > 0) */}
-        {showProgress && (
-          <View>
-            <View style={styles.progTrack}>
-              <LinearGradient
-                colors={G.progFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progFill, { width: `${Math.round(progress * 100)}%` as any }]}
-              />
-            </View>
-            <View style={styles.progNote}>
-              <Text style={styles.progNoteText}>{focusedMinutes} / {est} min focused</Text>
-              <Text style={styles.progNoteText}>{Math.round(progress * 100)}%</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          {/* Done: white circle with gray border */}
-          <Pressable
-            style={styles.doneButton}
-            hitSlop={8}
-            onPress={(e) => { e.stopPropagation(); onComplete(); }}
-            accessibilityRole="button"
-            accessibilityLabel="Mark done"
-          >
-            <CheckIcon size={16} color={C.mintCheck} strokeWidth={2.5} />
-          </Pressable>
-
-          {/* Start Focus: peach gradient with depth shadow */}
+        {/* ── Right: stacked action buttons ── */}
+        <View style={styles.right}>
+          {/* Start Focus */}
           <Pressable
             hitSlop={4}
             onPress={(e) => { e.stopPropagation(); onStartFocus(); }}
@@ -201,10 +198,34 @@ export function AssignmentCard({
               end={{ x: 0, y: 1 }}
               style={[styles.focusButton, shadow.focusBtn]}
             >
-              <PlayIcon size={10} color="#fff" fill="#fff" />
+              <PlayIcon size={9} color={C.textInverse} fill={C.textInverse} />
               <Text style={styles.focusButtonText}>Start Focus</Text>
             </LinearGradient>
           </Pressable>
+
+          {/* Done circle */}
+          <Pressable
+            style={styles.doneButton}
+            hitSlop={8}
+            onPress={(e) => { e.stopPropagation(); onComplete(); }}
+            accessibilityRole="button"
+            accessibilityLabel="Mark done"
+          >
+            <CheckIcon size={15} color={C.mintCheck} strokeWidth={2.5} />
+          </Pressable>
+
+          {/* Delete (optional) */}
+          {onDelete && (
+            <Pressable
+              style={styles.deleteButton}
+              hitSlop={8}
+              onPress={(e) => { e.stopPropagation(); onDelete(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Delete assignment"
+            >
+              <TrashIcon size={14} color={C.error} strokeWidth={2} />
+            </Pressable>
+          )}
         </View>
 
       </View>
@@ -219,7 +240,7 @@ const styles = StyleSheet.create({
     flexDirection:    "row",
     backgroundColor:  C.surface,
     marginHorizontal: 16,
-    marginVertical:   5,
+    marginVertical:   4,
     borderRadius:     18,
     borderWidth:      1,
     borderColor:      C.cardBorder,
@@ -229,75 +250,75 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.75,
   },
-  // Gradient urgency rail — flex sibling, full card height via alignSelf stretch
   rail: {
     width:     5,
     flexShrink: 0,
   },
+  // Two-column content area
   content: {
     flex:          1,
-    paddingTop:    14,
-    paddingRight:  16,
-    paddingBottom: 14,
-    paddingLeft:   17,
-    gap:           8,
+    flexDirection: "row",
+    paddingTop:    10,
+    paddingBottom: 10,
+    paddingLeft:   12,
+    paddingRight:  10,
+    gap:           10,
   },
-  topRow: {
-    flexDirection:  "row",
-    alignItems:     "center",
-    justifyContent: "space-between",
-    gap:            8,
+  // Left column: text info
+  left: {
+    flex: 1,
+    gap:  5,
+  },
+  courseRow: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           6,
   },
   courseLabel: {
     flex:          1,
-    fontSize:      11,
+    fontSize:      10,
     fontFamily:    F.xbold,
     color:         C.brand,
     textTransform: "uppercase",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
   },
   kindBadge: {
-    borderRadius:    R.full,
-    paddingVertical: 3,
-    paddingHorizontal: 9,
-    flexShrink:      0,
+    borderRadius:      R.full,
+    paddingVertical:   2,
+    paddingHorizontal: 7,
+    flexShrink:        0,
   },
   kindText: {
-    fontSize:      10,
+    fontSize:      9,
     fontFamily:    F.xbold,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   title: {
     fontFamily:    F.display,
-    fontSize:      17,
+    fontSize:      15,
     color:         C.ink,
-    lineHeight:    21,
-    letterSpacing: -0.25,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems:    "center",
-    flexWrap:      "wrap",
-    gap:           8,
+    lineHeight:    19,
+    letterSpacing: -0.2,
   },
   pill: {
-    flexDirection:    "row",
-    alignItems:       "center",
-    gap:              6,
-    borderRadius:     R.full,
-    paddingVertical:  4,
-    paddingLeft:      8,
-    paddingRight:     10,
+    flexDirection:  "row",
+    alignItems:     "center",
+    alignSelf:      "flex-start",
+    gap:            5,
+    borderRadius:   R.full,
+    paddingVertical: 3,
+    paddingLeft:    7,
+    paddingRight:   9,
   },
   dot: {
-    width:        7,
-    height:       7,
+    width:        6,
+    height:       6,
     borderRadius: R.full,
     flexShrink:   0,
   },
   pillText: {
-    fontSize:      11,
+    fontSize:      10,
     fontFamily:    F.xbold,
     letterSpacing: -0.05,
   },
@@ -307,62 +328,68 @@ const styles = StyleSheet.create({
     gap:           4,
   },
   est: {
-    fontSize:   11,
+    fontSize:   10,
     fontFamily: F.bold,
     color:      C.timeText,
   },
+  progBlock: {
+    gap: 3,
+  },
   progTrack: {
-    height:       4,
-    borderRadius: 4,
+    height:          3,
+    borderRadius:    3,
     backgroundColor: C.chipBg,
-    overflow:     "hidden",
+    overflow:        "hidden",
   },
   progFill: {
-    height:       4,
-    borderRadius: 4,
+    height:       3,
+    borderRadius: 3,
   },
   progNote: {
     flexDirection:  "row",
     justifyContent: "space-between",
-    marginTop:      3,
   },
   progNoteText: {
-    fontSize:      10,
+    fontSize:      9,
     fontFamily:    F.xbold,
     color:         C.progNote,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
-  actions: {
-    flexDirection:  "row",
+  // Right column: stacked buttons
+  right: {
     alignItems:     "center",
-    justifyContent: "flex-end",
-    gap:            8,
-    marginTop:      2,
+    justifyContent: "center",
+    gap:            6,
+  },
+  focusButton: {
+    borderRadius:      10,
+    paddingVertical:   8,
+    paddingHorizontal: 10,
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               5,
+  },
+  focusButtonText: {
+    color:     C.textInverse,
+    fontSize:  11,
+    fontFamily: F.xbold,
   },
   doneButton: {
-    width:           36,
-    height:          36,
+    width:           30,
+    height:          30,
     borderRadius:    R.full,
     backgroundColor: C.surface,
     borderWidth:     2,
     borderColor:     C.doneBorder,
     alignItems:      "center",
     justifyContent:  "center",
-    flexShrink:      0,
   },
-  focusButton: {
-    borderRadius:      11,
-    paddingVertical:   9,
-    paddingHorizontal: 16,
-    flexDirection:     "row",
-    alignItems:        "center",
-  },
-  focusButtonText: {
-    color:         C.textInverse,
-    fontSize:      12,
-    fontFamily:    F.xbold,
-    letterSpacing: -0.05,
-    marginLeft:    5,
+  deleteButton: {
+    width:           26,
+    height:          26,
+    borderRadius:    R.full,
+    alignItems:      "center",
+    justifyContent:  "center",
   },
 });

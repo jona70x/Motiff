@@ -20,6 +20,7 @@ import {
   Pause,
   X,
   Clock,
+  Trash2,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -41,6 +42,7 @@ export const Icons = {
   play:     Play,
   pause:    Pause,
   close:    X,
+  trash:    Trash2,
 
   // UI chrome
   chevronDown:    ChevronDown,
