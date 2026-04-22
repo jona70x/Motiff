@@ -62,3 +62,30 @@ export async function updateUserSettings(settings: Partial<UserSettings>): Promi
 
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Permanently deletes the current user's account and all associated data
+ * by invoking the delete-account Edge Function.
+ *
+ * Deletion is irreversible. The Edge Function removes all storage objects
+ * first, then deletes the auth.users row (which cascades through the entire
+ * data model via foreign keys). On success the caller must sign the user out.
+ *
+ * @throws If the user is not authenticated or the Edge Function returns an error.
+ */
+export async function deleteAccount(): Promise<void> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase.functions.invoke("delete-account", {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+
+  if (error) throw new Error(error.message);
+
+  // Edge Function returns { ok: boolean; message?: string }
+  const result = data as { ok: boolean; message?: string };
+  if (!result.ok) {
+    throw new Error(result.message ?? "Account deletion failed");
+  }
+}

@@ -31,7 +31,8 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "./plugins/withPrivacyManifest"
     ]
   }
 }
