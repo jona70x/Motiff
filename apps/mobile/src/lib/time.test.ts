@@ -1,4 +1,29 @@
-import { bucketAssignment, formatRelativeDue } from "./time";
+import { bucketAssignment, formatRelativeDue, urgencyRailColor } from "./time";
+
+// ── urgencyRailColor ───────────────────────────────────────────────────────────
+
+describe("urgencyRailColor", () => {
+  const NOW = new Date("2026-04-22T12:00:00Z");
+
+  it("returns railLater color for null due date",      () => expect(urgencyRailColor(null, NOW)).toBe("#D1D5DB"));
+  it("returns railLater color for undefined due date", () => expect(urgencyRailColor(undefined, NOW)).toBe("#D1D5DB"));
+  it("returns railLater for an invalid date string",   () => expect(urgencyRailColor("not-a-date", NOW)).toBe("#D1D5DB"));
+
+  it("returns railOverdue for a past due date", () =>
+    expect(urgencyRailColor("2026-04-21T00:00:00Z", NOW)).toBe("#EF4444"));
+
+  it("returns railToday for a due date within 24 h", () =>
+    expect(urgencyRailColor("2026-04-22T18:00:00Z", NOW)).toBe("#F97316"));
+
+  it("returns railWeek for a due date 2 days away", () =>
+    expect(urgencyRailColor("2026-04-24T12:00:00Z", NOW)).toBe("#4F46E5"));
+
+  it("returns railWeek for a due date 6 days away", () =>
+    expect(urgencyRailColor("2026-04-28T12:00:00Z", NOW)).toBe("#4F46E5"));
+
+  it("returns railLater for a due date 8 days away", () =>
+    expect(urgencyRailColor("2026-04-30T12:00:00Z", NOW)).toBe("#D1D5DB"));
+});
 
 describe("bucketAssignment", () => {
   const now = new Date(2025, 5, 15, 10, 0, 0);

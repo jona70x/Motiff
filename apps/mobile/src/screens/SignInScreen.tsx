@@ -33,6 +33,7 @@ import {
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
+import { C, F, R, shadow } from "../theme";
 
 type Props = NativeStackScreenProps<any, "SignIn">;
 
@@ -97,7 +98,7 @@ export function SignInScreen({ navigation }: Props) {
           onSubmitEditing={onSubmit}
         />
 
-        {error !== null && <Text style={styles.error}>{error}</Text>}
+          {error !== null && <Text style={styles.error}>{error}</Text>}
 
         <Pressable
           accessibilityRole="button"
@@ -137,59 +138,75 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#f6f6f8",
+    padding: 28,
+    backgroundColor: C.bg,
   },
-  card: {
+  inner: {
+    gap: 20,
+  },
+  wordmark: {
+    fontSize: 48,
+    fontFamily: F.display,     // Bricolage Grotesque Bold
+    color: C.text,
+    textAlign: "center",
+    letterSpacing: -1,
+  },
+  tagline: {
+    fontSize: 16,
+    fontFamily: F.medium,
+    color: C.textSub,
+    textAlign: "center",
+  },
+  form: {
     gap: 12,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 16,
-  },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderColor: C.border,
+    borderRadius: R.md,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     fontSize: 16,
+    fontFamily: F.body,
+    color: C.text,
+    ...shadow.card,
   },
   error: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 14,
+    fontFamily: F.medium,
   },
-  primaryButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    paddingVertical: 14,
+  heroButton: {
+    backgroundColor: C.lemon,
+    borderRadius: R.full,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 4,
+    ...shadow.float,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: C.border,
+    opacity: 1,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  heroButtonText: {
+    color: C.lemonText,
+    fontSize: 17,
+    fontFamily: F.bold,
+  },
+  heroButtonTextDisabled: {
+    color: C.textMuted,
   },
   forgotButton: {
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   forgotText: {
-    color: "#3355cc",
+    color: C.indigo,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   betaBanner: {
     backgroundColor: "#f0f4ff",

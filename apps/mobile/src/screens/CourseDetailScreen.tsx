@@ -431,7 +431,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>Back</Text>
         </Pressable>
 
         {/* Right side: completed badge + action menu */}

@@ -29,6 +29,7 @@ import { getUserSettings, updateUserSettings, deleteAccount } from "../lib/api/s
 import { supabase } from "../lib/supabase";
 import { DEFAULT_DAILY_BUDGET_MINUTES } from "../../../../packages/domain/plan/generator";
 import { parseBudgetInput } from "../../../../packages/domain/plan/budget";
+import { C } from "../theme";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ export function SettingsScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>Back</Text>
         </Pressable>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -266,7 +267,7 @@ export function SettingsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   flex: {
     flex: 1,

@@ -34,6 +34,8 @@ import { getUserSettings } from "../lib/api/settings";
 import { generateDailyPlan, DEFAULT_DAILY_BUDGET_MINUTES, type PlanBlock } from "../../../../packages/domain/plan/generator";
 import { PlanBlockCard } from "../components/PlanBlockCard";
 import { analytics } from "../lib/analytics";
+import { Icons } from "../lib/icons";
+import { C, F, R, shadow } from "../theme";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -51,10 +53,6 @@ type DisplayBlock = PlanBlock & {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/**
- * Returns today's date as a YYYY-MM-DD string in local time.
- * Matches the convention used in the progress summary module.
- */
 function localDateString(date: Date = new Date()): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -62,13 +60,6 @@ function localDateString(date: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-/**
- * Joins generated PlanBlock[] with the source AssignmentWithCourse[] to produce
- * DisplayBlock[] ready for rendering. Runs entirely in memory.
- *
- * @param blocks      - Output of generateDailyPlan.
- * @param assignments - Source assignments used for generation.
- */
 function enrichBlocks(
   blocks: PlanBlock[],
   assignments: AssignmentWithCourse[]
@@ -93,42 +84,28 @@ export function PlanScreen({ navigation }: Props) {
   const [regenerating, setRegenerating]   = useState(false);
   const [saveWarning, setSaveWarning]     = useState(false);
   const [error, setError]                 = useState<string | null>(null);
-  // Resolved budget: user's saved value or the app default
   const [budgetMinutes, setBudgetMinutes] = useState(DEFAULT_DAILY_BUDGET_MINUTES);
 
-  // Prevent overlapping generate calls when the user rapidly switches tabs
   const isGenerating = useRef(false);
 
-  /**
-   * Core generation pipeline. Accepts a flag so callers can distinguish
-   * the initial full-screen load from a user-initiated regenerate.
-   *
-   * @param isRegen - When true, uses the inline spinner instead of the full-screen loader.
-   */
   const generate = useCallback(async (isRegen = false) => {
     if (isGenerating.current) return;
     isGenerating.current = true;
 
-    if (isRegen) {
-      setRegenerating(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRegen) setRegenerating(true);
+    else         setLoading(true);
     setSaveWarning(false);
     setError(null);
 
     try {
-      // 1. Fetch user settings and uncompleted assignments in parallel
       const [settings, assignments] = await Promise.all([
         getUserSettings(),
         getTodayAssignments(),
       ]);
 
-      // 2. Resolve budget: prefer user's saved value, fall back to app default
       const budget = settings.daily_budget_minutes ?? DEFAULT_DAILY_BUDGET_MINUTES;
       setBudgetMinutes(budget);
 
-      // 3. Normalize assignments to PlanInput (due_at: undefined → null)
       const planInputs = assignments.map((a) => ({
         id:          a.id,
         title:       a.title,
@@ -137,25 +114,15 @@ export function PlanScreen({ navigation }: Props) {
         course_id:   a.course_id,
       }));
 
-      // 4. Generate the plan in memory — pure, no I/O
-      const blocks = generateDailyPlan(planInputs, budget);
-
-      // 5. Enrich with display data and render immediately
+      const blocks   = generateDailyPlan(planInputs, budget);
       const enriched = enrichBlocks(blocks, assignments);
       setDisplayBlocks(enriched);
 
-      // 6. Track analytics
       const eventProps = { blockCount: blocks.length, budgetMinutes: budget };
-      if (isRegen) {
-        analytics.planRegenerated(eventProps);
-      } else {
-        analytics.planScreenViewed(eventProps);
-      }
+      if (isRegen) analytics.planRegenerated(eventProps);
+      else         analytics.planScreenViewed(eventProps);
 
-      // 7. Persist to Supabase in the background — display does not wait for this
-      saveDailyPlan(localDateString(), blocks).catch(() => {
-        setSaveWarning(true);
-      });
+      saveDailyPlan(localDateString(), blocks).catch(() => setSaveWarning(true));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate plan");
     } finally {
@@ -165,48 +132,34 @@ export function PlanScreen({ navigation }: Props) {
     }
   }, []);
 
-  // Re-generate every time the screen comes into focus so the plan reflects
-  // any assignments the user completed or added since the last visit.
   useFocusEffect(
-    useCallback(() => {
-      generate(false);
-    }, [generate])
+    useCallback(() => { generate(false); }, [generate])
   );
 
-  const handleRegenerate = useCallback(() => {
-    generate(true);
-  }, [generate]);
+  const handleRegenerate = useCallback(() => generate(true), [generate]);
 
-  // ── Full-screen loading state ─────────────────────────────────────────────
+  const RefreshIcon  = Icons.refresh;
+  const SettingsIcon = Icons.settings;
 
   if (loading && displayBlocks.length === 0) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   const totalAllocated = displayBlocks.reduce((n, b) => n + b.allocatedMinutes, 0);
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Plan</Text>
-          {displayBlocks.length > 0 && (
-            <Text style={styles.subtitle}>
-              {totalAllocated} min today
-            </Text>
-          )}
         </View>
 
-        {/* Right-side controls: regenerate + settings */}
         <View style={styles.headerRight}>
-          {/* Regenerate button — shows spinner when in flight */}
           <Pressable
             onPress={handleRegenerate}
             disabled={regenerating}
@@ -214,26 +167,34 @@ export function PlanScreen({ navigation }: Props) {
             accessibilityRole="button"
             accessibilityLabel="Regenerate plan"
           >
-            {regenerating ? (
-              <ActivityIndicator size="small" color="#111" />
-            ) : (
-              <Text style={styles.regenButton}>↺ Regenerate</Text>
-            )}
+            {regenerating
+              ? <ActivityIndicator size="small" color={C.indigo} />
+              : <RefreshIcon size={20} color={C.textSub} />
+            }
           </Pressable>
 
-          {/* Settings shortcut */}
           <Pressable
             onPress={() => navigation.navigate("Settings")}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Open settings"
           >
-            <Text style={styles.settingsButton}>⚙</Text>
+            <SettingsIcon size={20} color={C.textSub} />
           </Pressable>
         </View>
       </View>
 
-      {/* ── Non-blocking save warning ── */}
+      {/* Indigo subheader pill */}
+      {displayBlocks.length > 0 && (
+        <View style={styles.subheaderRow}>
+          <View style={styles.subheaderPill}>
+            <Text style={styles.subheaderText}>
+              {totalAllocated} min · {budgetMinutes} min budget
+            </Text>
+          </View>
+        </View>
+      )}
+
       {saveWarning && (
         <View style={styles.warningBanner}>
           <Text style={styles.warningText}>
@@ -242,7 +203,6 @@ export function PlanScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ── Error state ── */}
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -252,7 +212,6 @@ export function PlanScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* ── Empty state ── */}
       {displayBlocks.length === 0 && !loading && !error ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>Nothing to plan</Text>
@@ -268,7 +227,6 @@ export function PlanScreen({ navigation }: Props) {
           </Pressable>
         </View>
       ) : (
-        /* ── Plan list ── */
         <FlatList
           data={displayBlocks}
           keyExtractor={(item) => item.assignmentId}
@@ -277,9 +235,7 @@ export function PlanScreen({ navigation }: Props) {
             <RefreshControl refreshing={regenerating} onRefresh={handleRegenerate} />
           }
           ListHeaderComponent={
-            <Text style={styles.listHeader}>
-              Prioritised by urgency · {budgetMinutes} min budget
-            </Text>
+            <Text style={styles.listSubheader}>Prioritised by urgency</Text>
           }
           renderItem={({ item }) => (
             <PlanBlockCard
@@ -311,7 +267,7 @@ export function PlanScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -320,70 +276,74 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
+    paddingVertical: 14,
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   headerLeft: {
     gap: 2,
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#888",
-    fontWeight: "500",
+    fontFamily: F.xbold,
+    color: C.text,
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 18,
   },
-  regenButton: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    paddingBottom: 2, // optical alignment with title baseline
+  subheaderRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: C.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
   },
-  settingsButton: {
-    fontSize: 20,
-    color: "#555",
-    paddingBottom: 1,
+  subheaderPill: {
+    alignSelf: "flex-start",
+    backgroundColor: C.indigoLight,
+    borderRadius: R.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  subheaderText: {
+    fontSize: 12,
+    fontFamily: F.bold,
+    color: C.indigo,
   },
   listContent: {
     paddingVertical: 12,
     paddingBottom: 32,
   },
-  listHeader: {
+  listSubheader: {
     fontSize: 11,
-    color: "#aaa",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
   warningBanner: {
-    backgroundColor: "#fff8e1",
+    backgroundColor: C.warningBg,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ffe082",
+    borderBottomColor: "#FDE68A",
   },
   warningText: {
     fontSize: 12,
-    color: "#795548",
+    fontFamily: F.medium,
+    color: C.warning,
   },
   errorBanner: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
+    backgroundColor: C.errorBg,
+    borderRadius: R.md,
     padding: 12,
     margin: 16,
     flexDirection: "row",
@@ -392,13 +352,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: "#b00020",
+    color: C.error,
     fontSize: 13,
+    fontFamily: F.medium,
   },
   retryText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: F.bold,
     marginLeft: 12,
   },
   emptyContainer: {
@@ -410,25 +371,26 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
+    fontFamily: F.bold,
+    color: C.text,
   },
   emptyBody: {
     fontSize: 14,
-    color: "#777",
+    fontFamily: F.body,
+    color: C.textSub,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 8,
   },
   ctaButton: {
-    backgroundColor: "#111",
+    backgroundColor: C.indigo,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: R.full,
   },
   ctaText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });

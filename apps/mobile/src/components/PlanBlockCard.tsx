@@ -5,22 +5,20 @@
  */
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Icons } from "../lib/icons";
+import { C, F, R, shadow } from "../theme";
 
 // ── Urgency helpers ────────────────────────────────────────────────────────────
 
-/**
- * Returns a human-readable due-date label and a color token based on the
- * assignment's urgency score. Mirrors the bands in computeUrgencyScore.
- */
 function urgencyMeta(
   due_at: string | null,
   urgencyScore: number
-): { label: string; color: string } {
-  if (!due_at)            return { label: "No due date", color: "#aaa" };
-  if (urgencyScore >= 1000) return { label: "Overdue",    color: "#b00020" };
-  if (urgencyScore >= 500)  return { label: "Due today",  color: "#e65100" };
-  if (urgencyScore >= 10)   return { label: "Due this week", color: "#1565c0" };
-  return { label: "Due later", color: "#888" };
+): { label: string; color: string; railColor: string } {
+  if (!due_at)              return { label: "No due date",  color: C.textMuted, railColor: C.railLater  };
+  if (urgencyScore >= 1000) return { label: "Overdue",      color: C.error,     railColor: C.railOverdue };
+  if (urgencyScore >= 500)  return { label: "Due today",    color: C.warning,   railColor: C.railToday  };
+  if (urgencyScore >= 10)   return { label: "Due this week",color: C.indigo,    railColor: C.railWeek   };
+  return                           { label: "Due later",    color: C.textMuted, railColor: C.railLater  };
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -51,11 +49,11 @@ export type PlanBlockCardProps = {
  * PlanBlockCard displays one prioritised work block in the daily plan.
  *
  * Layout:
- * ┌───────────────────────────────────────────────┐
- * │ [N]  COURSE NAME              ◷ XX min        │
- * │      Assignment title                          │
- * │      Due label             [Start Focus]       │
- * └───────────────────────────────────────────────┘
+ * ┌────────────────────────────────────────────────┐
+ * │ rail │ [N]  COURSE NAME          ◷ XX min      │
+ * │      │      Assignment title                    │
+ * │      │      Due label         [Start Focus]     │
+ * └────────────────────────────────────────────────┘
  */
 export function PlanBlockCard({
   position,
@@ -67,7 +65,8 @@ export function PlanBlockCard({
   onPress,
   onStartFocus,
 }: PlanBlockCardProps) {
-  const { label: dueLabel, color: dueColor } = urgencyMeta(due_at, urgencyScore);
+  const { label: dueLabel, color: dueColor, railColor } = urgencyMeta(due_at, urgencyScore);
+  const ClockIcon = Icons.clock;
 
   return (
     <Pressable
@@ -76,40 +75,41 @@ export function PlanBlockCard({
       accessibilityRole="button"
       accessibilityLabel={`Plan block ${position}: ${title}`}
     >
-      <View style={styles.topRow}>
-        {/* Position badge */}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{position}</Text>
-        </View>
+      {/* Urgency color rail */}
+      <View style={[styles.rail, { backgroundColor: railColor }]} />
 
-        {/* Course label + time allocation */}
-        <View style={styles.metaRight}>
+      <View style={styles.content}>
+        {/* Top row: position badge + course + time */}
+        <View style={styles.topRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{position}</Text>
+          </View>
           <Text style={styles.courseLabel} numberOfLines={1}>
             {courseTitle ?? "Unknown course"}
           </Text>
-          <Text style={styles.timeLabel}>◷ {allocatedMinutes} min</Text>
+          <View style={styles.timeChip}>
+            <ClockIcon size={11} color={C.textSub} />
+            <Text style={styles.timeLabel}>{allocatedMinutes} min</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Assignment title */}
-      <Text style={styles.title} numberOfLines={2}>
-        {title}
-      </Text>
+        {/* Assignment title */}
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
 
-      {/* Bottom row: urgency label + CTA */}
-      <View style={styles.bottomRow}>
-        <Text style={[styles.dueLabel, { color: dueColor }]}>{dueLabel}</Text>
-        <Pressable
-          style={styles.focusButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onStartFocus();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Start focus on ${title}`}
-        >
-          <Text style={styles.focusButtonText}>Start Focus</Text>
-        </Pressable>
+        {/* Bottom row: urgency label + CTA */}
+        <View style={styles.bottomRow}>
+          <Text style={[styles.dueLabel, { color: dueColor }]}>{dueLabel}</Text>
+          <Pressable
+            style={styles.focusButton}
+            onPress={(e) => { e.stopPropagation(); onStartFocus(); }}
+            accessibilityRole="button"
+            accessibilityLabel={`Start focus on ${title}`}
+          >
+            <Text style={styles.focusButtonText}>Start Focus</Text>
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -119,83 +119,93 @@ export function PlanBlockCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     marginHorizontal: 16,
     marginVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e6",
-    padding: 14,
-    gap: 8,
+    borderRadius: R.lg,
+    flexDirection: "row",
+    overflow: "hidden",
+    ...shadow.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    opacity: 0.75,
+  },
+  rail: {
+    width: 4,
+    flexShrink: 0,
+  },
+  content: {
+    flex: 1,
+    padding: 13,
+    gap: 8,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   badge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#111",
+    width: 26,
+    height: 26,
+    borderRadius: R.full,
+    backgroundColor: C.indigo,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   badgeText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  metaRight: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    color: C.textInverse,
+    fontSize: 12,
+    fontFamily: F.bold,
   },
   courseLabel: {
     flex: 1,
     fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+  },
+  timeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: C.borderLight,
+    borderRadius: R.full,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   timeLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#555",
-    marginLeft: 8,
+    fontSize: 11,
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   title: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     lineHeight: 20,
-    marginLeft: 38, // align under meta, past the badge
+    marginLeft: 34, // align under course label, past the badge
   },
   bottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginLeft: 38,
+    marginLeft: 34,
   },
   dueLabel: {
     fontSize: 12,
-    fontWeight: "500",
+    fontFamily: F.medium,
   },
   focusButton: {
-    backgroundColor: "#111",
-    borderRadius: 6,
+    backgroundColor: C.peach,
+    borderRadius: R.md,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   focusButtonText: {
-    color: "#fff",
+    color: C.peachText,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });

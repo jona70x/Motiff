@@ -3,16 +3,13 @@
  * First-launch onboarding carousel shown to every new user.
  *
  * Structure:
- *   Slides 0–2  — value-prop slides (auto-advance or swipe)
+ *   Slides 0–2  — value-prop slides with gradient tint backgrounds
  *   Slide 3     — notifications opt-in with value explanation,
  *                 followed by the system permission dialog on iOS
  *
  * On completion the screen calls `onComplete()` which persists the flag
  * in AsyncStorage and triggers a re-render in RootNavigator, routing the
  * user to the main app (MainTabs).
- *
- * The user can skip at any point — they land in the main app without
- * enabling notifications. They can always enable later via Settings.
  */
 
 import { useRef, useState } from "react";
@@ -26,7 +23,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Notifications from "expo-notifications";
+import { C, F, R } from "../theme";
 
 // ── Slide definitions ──────────────────────────────────────────────────────────
 
@@ -34,30 +33,36 @@ type Slide = {
   icon: string;
   title: string;
   body: string;
+  /** LinearGradient colors for the slide's tint background. */
+  gradient: readonly [string, string];
 };
 
 const SLIDES: Slide[] = [
   {
-    icon: "📚",
-    title: "Welcome to Motiff",
-    body: "Your all-in-one academic companion — built for students who want to stay on top of their studies without the chaos.",
+    icon:     "📚",
+    title:    "Welcome to Motiff",
+    body:     "Your all-in-one academic companion — built for students who want to stay on top of their studies without the chaos.",
+    gradient: ["#EEF2FF", "#fbfaff"],
   },
   {
-    icon: "🗂️",
-    title: "Track every course",
-    body: "Add your courses and upload syllabi. Motiff extracts assignments and due dates automatically so nothing slips through.",
+    icon:     "🗂️",
+    title:    "Track every course",
+    body:     "Add your courses and upload syllabi. Motiff extracts assignments and due dates automatically so nothing slips through.",
+    gradient: ["#E8FDF7", "#fbfaff"],
   },
   {
-    icon: "⏱️",
-    title: "Focus, then recharge",
-    body: "A built-in Pomodoro timer keeps you in the zone. Set a daily study budget and watch your streaks grow.",
+    icon:     "⏱️",
+    title:    "Focus, then recharge",
+    body:     "A built-in Pomodoro timer keeps you in the zone. Set a daily study budget and watch your streaks grow.",
+    gradient: ["#FFFBEB", "#fbfaff"],
   },
   {
-    icon: "🔔",
-    title: "Never miss a deadline",
-    body: "Enable notifications and Motiff will remind you about upcoming assignments — so you can focus on studying, not remembering.",
+    icon:     "🔔",
+    title:    "Never miss a deadline",
+    body:     "Enable notifications and Motiff will remind you about upcoming assignments — so you can focus on studying, not remembering.",
+    gradient: ["#FFF1F2", "#fbfaff"],
   },
-];
+] as const;
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const LAST_SLIDE = SLIDES.length - 1;
@@ -89,24 +94,17 @@ export function OnboardingScreen({ onComplete }: Props) {
   }
 
   function handleNext() {
-    if (activeIndex < LAST_SLIDE) {
-      scrollTo(activeIndex + 1);
-    }
+    if (activeIndex < LAST_SLIDE) scrollTo(activeIndex + 1);
   }
 
   async function handleEnableNotifications() {
     setNotifRequested(true);
     try {
-      // Request the system permission. On iOS this shows the native dialog.
-      // On Android 13+ it also shows a dialog; earlier versions grant automatically.
-      // We do not store the result — the app checks permission status at use-time.
       if (Platform.OS !== "web") {
         await Notifications.requestPermissionsAsync();
       }
     } catch {
-      // Permission request can fail if the notifications module is unavailable
-      // (e.g. in a bare Expo Go build without native rebuild). Not fatal —
-      // proceed to finish onboarding regardless.
+      // Non-fatal — proceed to finish onboarding regardless.
     } finally {
       await finish();
     }
@@ -118,8 +116,6 @@ export function OnboardingScreen({ onComplete }: Props) {
     await onComplete();
   }
 
-  // ── Scroll sync ─────────────────────────────────────────────────────────────
-
   function handleScroll(e: { nativeEvent: { contentOffset: { x: number } } }) {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (index !== activeIndex) setActiveIndex(index);
@@ -128,10 +124,20 @@ export function OnboardingScreen({ onComplete }: Props) {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   const isLast = activeIndex === LAST_SLIDE;
+  const currentSlide = SLIDES[activeIndex] ?? SLIDES[0]!;
 
   return (
     <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
-      {/* Skip button — always visible except on the last slide (replaced by "Get started") */}
+      {/* Gradient tint covers the whole screen and cross-fades per slide */}
+      <LinearGradient
+        colors={currentSlide.gradient}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.6 }}
+        pointerEvents="none"
+      />
+
+      {/* Skip button */}
       <View style={styles.header}>
         {!isLast ? (
           <Pressable
@@ -143,7 +149,6 @@ export function OnboardingScreen({ onComplete }: Props) {
             <Text style={styles.skipText}>Skip</Text>
           </Pressable>
         ) : (
-          /* Placeholder to keep header height consistent */
           <View />
         )}
       </View>
@@ -222,7 +227,7 @@ export function OnboardingScreen({ onComplete }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   header: {
     flexDirection: "row",
@@ -233,8 +238,8 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 15,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
   scroller: {
     flex: 1,
@@ -248,19 +253,20 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   icon: {
-    fontSize: 80,
+    fontSize: 84,
     marginBottom: 8,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#111",
+    fontSize: 27,
+    fontFamily: F.display,
+    color: C.text,
     textAlign: "center",
     lineHeight: 34,
   },
   body: {
     fontSize: 16,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
     textAlign: "center",
     lineHeight: 24,
   },
@@ -273,12 +279,12 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: "#d6d6dc",
+    borderRadius: R.full,
+    backgroundColor: C.border,
   },
   dotActive: {
-    backgroundColor: "#111",
-    width: 20,
+    backgroundColor: C.indigo,
+    width: 22,
   },
   actions: {
     paddingHorizontal: 24,
@@ -286,18 +292,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    paddingVertical: 14,
+    backgroundColor: C.indigo,
+    borderRadius: R.full,
+    paddingVertical: 15,
     alignItems: "center",
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
   secondaryButton: {
     alignItems: "center",
@@ -305,6 +311,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 15,
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
   },
 });
