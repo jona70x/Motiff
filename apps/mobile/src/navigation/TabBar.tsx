@@ -25,11 +25,7 @@ const TAB_ICONS = {
 
 type TabName = keyof typeof TAB_ICONS;
 
-/**
- * Custom floating tab bar with Lucide icons and a lemon FAB that opens the
- * AddCourse modal (or AddAssignment when courses exist — callers can adjust
- * the navigation target via the `fabTarget` prop if needed).
- */
+/** Custom floating tab bar with Lucide icons and a lemon FAB that opens the AddCourse modal. */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 

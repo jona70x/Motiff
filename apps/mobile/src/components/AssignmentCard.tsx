@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icons } from "../lib/icons";
-import { formatRelativeDue, isOverdue } from "../lib/time";
+import { formatRelativeDue, isOverdue, urgencyRailColor } from "../lib/time";
 import type { AssignmentWithCourse } from "../lib/api/today";
 import { C, F, R, shadow } from "../theme";
 
@@ -24,20 +24,6 @@ const KIND_STYLES: Record<string, { bg: string; text: string }> = {
 function kindStyle(kind: string | null | undefined) {
   if (!kind) return null;
   return KIND_STYLES[kind.toLowerCase()] ?? KIND_STYLES.other;
-}
-
-// ── Urgency rail color from due date ──────────────────────────────────────────
-
-function urgencyRailColor(dueAt: string | null | undefined): string {
-  if (!dueAt) return C.railLater;
-  const now = new Date();
-  const due = new Date(dueAt);
-  const diffMs = due.getTime() - now.getTime();
-  if (diffMs < 0) return C.railOverdue;
-  const diffDays = diffMs / 86_400_000;
-  if (diffDays < 1) return C.railToday;
-  if (diffDays < 7) return C.railWeek;
-  return C.railLater;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -92,9 +78,10 @@ export function AssignmentCard({ assignment, onPress, onStartFocus, onComplete }
           </View>
 
           <View style={styles.actions}>
-            {/* Mint done button */}
+            {/* Mint done button — 32×32 visual, hitSlop expands tap to ≥44pt */}
             <Pressable
               style={styles.doneButton}
+              hitSlop={8}
               onPress={(e) => { e.stopPropagation(); onComplete(); }}
               accessibilityRole="button"
               accessibilityLabel="Mark done"
@@ -105,6 +92,7 @@ export function AssignmentCard({ assignment, onPress, onStartFocus, onComplete }
             {/* Peach Start Focus button */}
             <Pressable
               style={styles.focusButton}
+              hitSlop={4}
               onPress={(e) => { e.stopPropagation(); onStartFocus(); }}
               accessibilityRole="button"
               accessibilityLabel="Start Focus"

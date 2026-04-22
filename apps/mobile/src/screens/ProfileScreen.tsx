@@ -27,12 +27,15 @@ type Props = NativeStackScreenProps<any, "Profile">;
  * stats, and account actions (Settings, Sign out).
  */
 export function ProfileScreen({ navigation }: Props) {
-  const [email, setEmail]     = useState<string | null>(null);
-  const [stats, setStats]     = useState<ProfileStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [email, setEmail]       = useState<string | null>(null);
+  const [stats, setStats]       = useState<ProfileStats | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const [{ data: sessionData }, profileStats] = await Promise.all([
         supabase.auth.getSession(),
@@ -40,6 +43,8 @@ export function ProfileScreen({ navigation }: Props) {
       ]);
       setEmail(sessionData.session?.user.email ?? null);
       setStats(profileStats);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -65,14 +70,30 @@ export function ProfileScreen({ navigation }: Props) {
     );
   }
 
+  if (loadError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Failed to load profile.</Text>
+        <Pressable style={styles.retryButton} onPress={load}>
+          <Text style={styles.retryText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   const focusHours = stats ? (stats.totalFocusMinutes / 60).toFixed(1) : "0.0";
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
-          <Icons.chevronDown size={24} color={C.textSub} />
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Icons.chevronLeft size={24} color={C.textSub} />
         </Pressable>
         <Text style={styles.headerTitle}>Profile</Text>
         <Pressable
@@ -296,5 +317,23 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  errorText: {
+    fontSize: 15,
+    fontFamily: F.medium,
+    color: C.textSub,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: C.indigo,
+    borderRadius: R.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  retryText: {
+    color: C.textInverse,
+    fontSize: 15,
+    fontFamily: F.bold,
   },
 });

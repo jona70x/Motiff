@@ -164,6 +164,7 @@ export function TodayScreen({ navigation }: Props) {
         <Pressable
           style={styles.avatarButton}
           onPress={() => navigation.navigate("Profile")}
+          hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel="Open profile"
         >

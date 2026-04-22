@@ -11,6 +11,7 @@ import {
   Settings,
   UserCircle,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   RotateCcw,
   Check,
@@ -42,6 +43,7 @@ export const Icons = {
 
   // UI chrome
   chevronDown:  ChevronDown,
+  chevronLeft:  ChevronLeft,
   chevronRight: ChevronRight,
   clock:        Clock,
 } as const;

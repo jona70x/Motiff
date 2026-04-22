@@ -1,5 +1,20 @@
 export type DueBucket = "today" | "this_week" | "later";
 
+/**
+ * Returns the urgency rail color for an assignment card based on its due date.
+ * Mirrors the visual language established in AssignmentCard and PlanBlockCard.
+ */
+export function urgencyRailColor(dueAt: string | null | undefined, now: Date = new Date()): string {
+  if (!dueAt) return "#D1D5DB"; // C.railLater
+  const due    = new Date(dueAt);
+  if (isNaN(due.getTime())) return "#D1D5DB";
+  const diffMs = due.getTime() - now.getTime();
+  if (diffMs < 0)                return "#EF4444"; // C.railOverdue
+  if (diffMs < 86_400_000)       return "#F97316"; // C.railToday  (< 24h)
+  if (diffMs < 7 * 86_400_000)   return "#4F46E5"; // C.railWeek   (< 7d)
+  return "#D1D5DB";                                 // C.railLater
+}
+
 export function isOverdue(dueAt: string | null | undefined, now: Date = new Date()): boolean {
   if (!dueAt) return false;
   const due = new Date(dueAt);

@@ -110,7 +110,7 @@ export function SignInScreen({ navigation }: Props) {
             {submitting ? (
               <ActivityIndicator color={C.lemonText} />
             ) : (
-              <Text style={styles.heroButtonText}>Sign in</Text>
+              <Text style={[styles.heroButtonText, disabled && styles.heroButtonTextDisabled]}>Sign in</Text>
             )}
           </Pressable>
 
@@ -158,8 +158,6 @@ const styles = StyleSheet.create({
     fontFamily: F.medium,
     color: C.textSub,
     textAlign: "center",
-    marginTop: -8,
-    marginBottom: 8,
   },
   form: {
     gap: 12,
@@ -190,12 +188,18 @@ const styles = StyleSheet.create({
     ...shadow.float,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: C.border,
+    opacity: 1,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   heroButtonText: {
     color: C.lemonText,
     fontSize: 17,
     fontFamily: F.bold,
+  },
+  heroButtonTextDisabled: {
+    color: C.textMuted,
   },
   forgotButton: {
     alignItems: "center",

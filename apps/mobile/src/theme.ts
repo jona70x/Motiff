@@ -8,16 +8,13 @@ export const C = {
 
   // ── Primary (Indigo) ─────────────────────────────────────────────────────────
   indigo:      "#4F46E5",
-  indigoDark:  "#3730A3",
   indigoLight: "#EEF2FF",
 
   // ── Accent palette ───────────────────────────────────────────────────────────
   peach:       "#FF9F7A",   // "Start Focus" button background
-  peachDark:   "#E07A53",
   peachText:   "#5C2400",   // text on peach
 
   mint:        "#52D9B6",   // "Done" button
-  mintDark:    "#3ABFA0",
   mintBg:      "#E8FDF7",
 
   lemon:       "#FFE566",   // floating action button
