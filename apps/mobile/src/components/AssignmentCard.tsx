@@ -203,29 +203,30 @@ export function AssignmentCard({
             </LinearGradient>
           </Pressable>
 
-          {/* Done circle */}
-          <Pressable
-            style={styles.doneButton}
-            hitSlop={8}
-            onPress={(e) => { e.stopPropagation(); onComplete(); }}
-            accessibilityRole="button"
-            accessibilityLabel="Mark done"
-          >
-            <CheckIcon size={15} color={C.mintCheck} strokeWidth={2.5} />
-          </Pressable>
-
-          {/* Delete (optional) */}
-          {onDelete && (
+          {/* Done + Delete side by side */}
+          <View style={styles.bottomActions}>
             <Pressable
-              style={styles.deleteButton}
+              style={styles.doneButton}
               hitSlop={8}
-              onPress={(e) => { e.stopPropagation(); onDelete(); }}
+              onPress={(e) => { e.stopPropagation(); onComplete(); }}
               accessibilityRole="button"
-              accessibilityLabel="Delete assignment"
+              accessibilityLabel="Mark done"
             >
-              <TrashIcon size={14} color={C.error} strokeWidth={2} />
+              <CheckIcon size={15} color={C.mintCheck} strokeWidth={2.5} />
             </Pressable>
-          )}
+
+            {onDelete && (
+              <Pressable
+                style={styles.deleteButton}
+                hitSlop={8}
+                onPress={(e) => { e.stopPropagation(); onDelete(); }}
+                accessibilityRole="button"
+                accessibilityLabel="Delete assignment"
+              >
+                <TrashIcon size={14} color={C.error} strokeWidth={2} />
+              </Pressable>
+            )}
+          </View>
         </View>
 
       </View>
@@ -384,6 +385,11 @@ const styles = StyleSheet.create({
     borderColor:     C.doneBorder,
     alignItems:      "center",
     justifyContent:  "center",
+  },
+  bottomActions: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           6,
   },
   deleteButton: {
     width:           26,
