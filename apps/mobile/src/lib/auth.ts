@@ -154,7 +154,7 @@ export function useAuthSession(): AuthState {
       linkSub.remove();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Mount-once; loading ref is only read inside the closure, not a dep
+  }, []); // Mount-once: all subscriptions are stable and must not re-fire on re-render
 
   return { session, loading, recoveryMode };
 }

@@ -96,13 +96,20 @@ export function OnboardingScreen({ onComplete }: Props) {
 
   async function handleEnableNotifications() {
     setNotifRequested(true);
-    // Request the system permission. On iOS this shows the native dialog.
-    // On Android 13+ it also shows a dialog; earlier versions grant automatically.
-    // We do not store the result — the app checks permission status at use-time.
-    if (Platform.OS !== "web") {
-      await Notifications.requestPermissionsAsync();
+    try {
+      // Request the system permission. On iOS this shows the native dialog.
+      // On Android 13+ it also shows a dialog; earlier versions grant automatically.
+      // We do not store the result — the app checks permission status at use-time.
+      if (Platform.OS !== "web") {
+        await Notifications.requestPermissionsAsync();
+      }
+    } catch {
+      // Permission request can fail if the notifications module is unavailable
+      // (e.g. in a bare Expo Go build without native rebuild). Not fatal —
+      // proceed to finish onboarding regardless.
+    } finally {
+      await finish();
     }
-    await finish();
   }
 
   async function finish() {
