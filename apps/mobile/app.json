@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.motiff.mobile"
+      "bundleIdentifier": "com.motiff.mobile",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.motiff.mobile",
@@ -40,7 +41,8 @@
           "defaultChannel": "default",
           "sounds": []
         }
-      ]
+      ],
+      "./plugins/withPrivacyManifest"
     ]
   }
 }
