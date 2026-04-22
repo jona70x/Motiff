@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { C } from "../theme";
 import {
   ActivityIndicator,
   Pressable,
@@ -142,7 +143,7 @@ export function ProgressScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,

@@ -15,9 +15,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useAuthSession } from "../lib/auth";
 import { useOnboarding } from "../lib/onboarding";
+import { TabBar } from "./TabBar";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { SignInScreen } from "../screens/SignInScreen";
 import { ForgotPasswordScreen } from "../screens/ForgotPasswordScreen";
@@ -34,6 +35,8 @@ import { SyllabusCandidatesScreen } from "../screens/SyllabusCandidatesScreen";
 import { FocusTimerScreen } from "../screens/FocusTimerScreen";
 import { ProgressScreen } from "../screens/ProgressScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { ProfileScreen } from "../screens/ProfileScreen";
+import { C } from "../theme";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -43,38 +46,19 @@ const Tab   = createBottomTabNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#111",
-        tabBarInactiveTintColor: "#999",
+        // Extra padding so scroll content clears the floating tab bar + FAB
+        sceneStyle: { paddingBottom: 130 },
       }}
     >
-      <Tab.Screen
-        name="Today"
-        component={TodayScreen}
-        options={{ tabBarIcon: ({ color }) => <TabIcon label="●" color={color} /> }}
-      />
-      <Tab.Screen
-        name="Plan"
-        component={PlanScreen}
-        options={{ tabBarIcon: ({ color }) => <TabIcon label="▦" color={color} /> }}
-      />
-      <Tab.Screen
-        name="Courses"
-        component={CoursesScreen}
-        options={{ tabBarIcon: ({ color }) => <TabIcon label="▤" color={color} /> }}
-      />
-      <Tab.Screen
-        name="Progress"
-        component={ProgressScreen}
-        options={{ tabBarIcon: ({ color }) => <TabIcon label="▨" color={color} /> }}
-      />
+      <Tab.Screen name="Today"    component={TodayScreen}    />
+      <Tab.Screen name="Plan"     component={PlanScreen}     />
+      <Tab.Screen name="Courses"  component={CoursesScreen}  />
+      <Tab.Screen name="Progress" component={ProgressScreen} />
     </Tab.Navigator>
   );
-}
-
-function TabIcon({ label, color }: { label: string; color: string }) {
-  return <Text style={{ color, fontSize: 20 }}>{label}</Text>;
 }
 
 // ── Root navigator ─────────────────────────────────────────────────────────────
@@ -88,8 +72,8 @@ export function RootNavigator() {
   // Wait for both the session and the onboarding flag before rendering anything.
   if (loading || !onboardingChecked) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: C.bg }}>
+        <ActivityIndicator color={C.indigo} />
       </View>
     );
   }
@@ -135,19 +119,10 @@ export function RootNavigator() {
             <Stack.Screen name="SyllabusCandidates">{(props) => <SyllabusCandidatesScreen {...props} />}</Stack.Screen>
             <Stack.Screen name="FocusTimer">{(props) => <FocusTimerScreen {...props} />}</Stack.Screen>
             <Stack.Screen name="Settings">{(props) => <SettingsScreen {...props} />}</Stack.Screen>
+            <Stack.Screen name="Profile">{(props) => <ProfileScreen {...props} />}</Stack.Screen>
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
-// ── Styles ─────────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

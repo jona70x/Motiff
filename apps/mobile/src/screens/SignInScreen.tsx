@@ -14,10 +14,6 @@
  *   3. Tapping the link opens the app via the deep-link handler in auth.ts,
  *      which calls supabase.auth.setSession() and signs the user in.
  *   4. On first sign-in the user sees the onboarding carousel.
- *
- * Because sign-up is invite-only, this screen only handles sign-in.
- * The mode toggle ("Create an account") is replaced by a "Closed beta"
- * banner that explains the invite process clearly.
  */
 
 import { useState } from "react";
@@ -33,6 +29,7 @@ import {
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
+import { C, F, R, shadow } from "../theme";
 
 type Props = NativeStackScreenProps<any, "SignIn">;
 
@@ -68,59 +65,65 @@ export function SignInScreen({ navigation }: Props) {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Motiff</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+      <View style={styles.inner}>
+        {/* Bricolage Grotesque wordmark */}
+        <Text style={styles.wordmark}>Motiff</Text>
+        <Text style={styles.tagline}>Study smarter, not harder.</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          autoComplete="email"
-          autoCorrect={false}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          editable={!submitting}
-          returnKeyType="next"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          autoCapitalize="none"
-          autoComplete="password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          editable={!submitting}
-          returnKeyType="done"
-          onSubmitEditing={onSubmit}
-        />
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={C.textMuted}
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!submitting}
+            returnKeyType="next"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={C.textMuted}
+            autoCapitalize="none"
+            autoComplete="password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!submitting}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
+          />
 
-        {error !== null && <Text style={styles.error}>{error}</Text>}
+          {error !== null && <Text style={styles.error}>{error}</Text>}
 
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.primaryButton, disabled && styles.buttonDisabled]}
-          disabled={disabled}
-          onPress={onSubmit}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          )}
-        </Pressable>
+          {/* Hero sign-in button */}
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.heroButton, disabled && styles.buttonDisabled]}
+            disabled={disabled}
+            onPress={onSubmit}
+          >
+            {submitting ? (
+              <ActivityIndicator color={C.lemonText} />
+            ) : (
+              <Text style={styles.heroButtonText}>Sign in</Text>
+            )}
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => navigation.navigate("ForgotPassword")}
-          style={styles.forgotButton}
-        >
-          <Text style={styles.forgotText}>Forgot password?</Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("ForgotPassword")}
+            style={styles.forgotButton}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </Pressable>
+        </View>
 
-        {/* Closed-beta notice — replaces the open sign-up toggle */}
+        {/* Closed-beta notice */}
         <View style={styles.betaBanner}>
           <Text style={styles.betaTitle}>Closed beta</Text>
           <Text style={styles.betaBody}>
@@ -137,77 +140,89 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: "center",
-    padding: 24,
-    backgroundColor: "#f6f6f8",
+    padding: 28,
+    backgroundColor: C.bg,
   },
-  card: {
+  inner: {
+    gap: 20,
+  },
+  wordmark: {
+    fontSize: 48,
+    fontFamily: F.display,     // Bricolage Grotesque Bold
+    color: C.text,
+    textAlign: "center",
+    letterSpacing: -1,
+  },
+  tagline: {
+    fontSize: 16,
+    fontFamily: F.medium,
+    color: C.textSub,
+    textAlign: "center",
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  form: {
     gap: 12,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 16,
-  },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderColor: C.border,
+    borderRadius: R.md,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     fontSize: 16,
+    fontFamily: F.body,
+    color: C.text,
+    ...shadow.card,
   },
   error: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 14,
+    fontFamily: F.medium,
   },
-  primaryButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    paddingVertical: 14,
+  heroButton: {
+    backgroundColor: C.lemon,
+    borderRadius: R.full,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 4,
+    ...shadow.float,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  heroButtonText: {
+    color: C.lemonText,
+    fontSize: 17,
+    fontFamily: F.bold,
   },
   forgotButton: {
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   forgotText: {
-    color: "#3355cc",
+    color: C.indigo,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   betaBanner: {
-    backgroundColor: "#f0f4ff",
-    borderRadius: 8,
+    backgroundColor: C.indigoLight,
+    borderRadius: R.lg,
     borderWidth: 1,
-    borderColor: "#c8d4f5",
+    borderColor: "#C7D2FE",
     padding: 14,
-    marginTop: 4,
     gap: 4,
   },
   betaTitle: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#3355cc",
+    fontFamily: F.bold,
+    color: C.indigo,
   },
   betaBody: {
     fontSize: 13,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
     lineHeight: 18,
   },
 });

@@ -42,7 +42,8 @@
           "sounds": []
         }
       ],
-      "./plugins/withPrivacyManifest"
+      "./plugins/withPrivacyManifest",
+      "expo-font"
     ]
   }
 }

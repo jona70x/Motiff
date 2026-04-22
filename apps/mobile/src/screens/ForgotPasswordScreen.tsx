@@ -96,7 +96,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
             accessibilityLabel="Go back"
             style={styles.backButton}
           >
-            <Text style={styles.backText}>← Back to sign in</Text>
+            <Text style={styles.backText}>Back to sign in</Text>
           </Pressable>
 
           <View style={styles.card}>

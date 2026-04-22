@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Icons } from "../lib/icons";
 import { formatRelativeDue, isOverdue } from "../lib/time";
 import type { AssignmentWithCourse } from "../lib/api/today";
+import { C, F, R, shadow } from "../theme";
 
 type Props = {
   assignment: AssignmentWithCourse;
@@ -9,25 +11,45 @@ type Props = {
   onComplete: () => void;
 };
 
+// ── Kind pill styles ───────────────────────────────────────────────────────────
+
 const KIND_STYLES: Record<string, { bg: string; text: string }> = {
-  exam:       { bg: "#ffebee", text: "#b00020" },
-  assignment: { bg: "#e3f2fd", text: "#1565c0" },
-  project:    { bg: "#f3e5f5", text: "#6a1b9a" },
-  reading:    { bg: "#e8f5e9", text: "#2e7d32" },
-  other:      { bg: "#f5f5f5", text: "#555" },
+  exam:       { bg: "#FFE4E6", text: "#9F1239" },
+  assignment: { bg: C.indigoLight, text: C.indigo },
+  project:    { bg: "#F3E8FF", text: "#6B21A8" },
+  reading:    { bg: C.successBg,  text: C.success  },
+  other:      { bg: C.borderLight, text: C.textSub },
 };
 
 function kindStyle(kind: string | null | undefined) {
   if (!kind) return null;
-  const k = kind.toLowerCase();
-  return KIND_STYLES[k] ?? KIND_STYLES.other;
+  return KIND_STYLES[kind.toLowerCase()] ?? KIND_STYLES.other;
 }
+
+// ── Urgency rail color from due date ──────────────────────────────────────────
+
+function urgencyRailColor(dueAt: string | null | undefined): string {
+  if (!dueAt) return C.railLater;
+  const now = new Date();
+  const due = new Date(dueAt);
+  const diffMs = due.getTime() - now.getTime();
+  if (diffMs < 0) return C.railOverdue;
+  const diffDays = diffMs / 86_400_000;
+  if (diffDays < 1) return C.railToday;
+  if (diffDays < 7) return C.railWeek;
+  return C.railLater;
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 export function AssignmentCard({ assignment, onPress, onStartFocus, onComplete }: Props) {
   const courseTitle = assignment.course?.title ?? "Unknown course";
   const relativeDue = formatRelativeDue(assignment.due_at);
-  const overdue = isOverdue(assignment.due_at);
-  const badge = kindStyle(assignment.kind);
+  const overdue     = isOverdue(assignment.due_at);
+  const badge       = kindStyle(assignment.kind);
+  const railColor   = urgencyRailColor(assignment.due_at);
+
+  const CheckIcon = Icons.check;
 
   return (
     <Pressable
@@ -35,75 +57,91 @@ export function AssignmentCard({ assignment, onPress, onStartFocus, onComplete }
       onPress={onPress}
       accessibilityRole="button"
     >
-      <View style={styles.topRow}>
-        <Text style={styles.courseLabel} numberOfLines={1}>
-          {courseTitle}
-        </Text>
-        {badge && assignment.kind ? (
-          <View style={[styles.kindBadge, { backgroundColor: badge.bg }]}>
-            <Text style={[styles.kindText, { color: badge.text }]}>
-              {assignment.kind.toLowerCase()}
-            </Text>
-          </View>
-        ) : null}
-      </View>
+      {/* Urgency color rail */}
+      <View style={[styles.rail, { backgroundColor: railColor }]} />
 
-      <Text style={styles.title} numberOfLines={2}>
-        {assignment.title}
-      </Text>
-
-      <View style={styles.bottomRow}>
-        <View style={styles.metaRow}>
-          {assignment.est_minutes != null && (
-            <Text style={styles.estMinutes}>~{assignment.est_minutes} min</Text>
-          )}
-          {relativeDue ? (
-            <Text style={[styles.due, overdue && styles.dueOverdue]}>{relativeDue}</Text>
+      <View style={styles.content}>
+        {/* Top row: course label + kind pill */}
+        <View style={styles.topRow}>
+          <Text style={styles.courseLabel} numberOfLines={1}>
+            {courseTitle}
+          </Text>
+          {badge && assignment.kind ? (
+            <View style={[styles.kindPill, { backgroundColor: badge.bg }]}>
+              <Text style={[styles.kindText, { color: badge.text }]}>
+                {assignment.kind.toLowerCase()}
+              </Text>
+            </View>
           ) : null}
         </View>
 
-        <View style={styles.actions}>
-          <Pressable
-            style={styles.doneButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onComplete();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Mark done"
-          >
-            <Text style={styles.doneButtonText}>✓</Text>
-          </Pressable>
-          <Pressable
-            style={styles.focusButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onStartFocus();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Start Focus"
-          >
-            <Text style={styles.focusButtonText}>Start Focus</Text>
-          </Pressable>
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={2}>
+          {assignment.title}
+        </Text>
+
+        {/* Bottom row: meta + actions */}
+        <View style={styles.bottomRow}>
+          <View style={styles.metaRow}>
+            {assignment.est_minutes != null && (
+              <Text style={styles.estMinutes}>{assignment.est_minutes} min</Text>
+            )}
+            {relativeDue ? (
+              <Text style={[styles.due, overdue && styles.dueOverdue]}>{relativeDue}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.actions}>
+            {/* Mint done button */}
+            <Pressable
+              style={styles.doneButton}
+              onPress={(e) => { e.stopPropagation(); onComplete(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Mark done"
+            >
+              <CheckIcon size={14} color={C.mint} strokeWidth={2.5} />
+            </Pressable>
+
+            {/* Peach Start Focus button */}
+            <Pressable
+              style={styles.focusButton}
+              onPress={(e) => { e.stopPropagation(); onStartFocus(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Start Focus"
+            >
+              <Text style={styles.focusButtonText}>Start Focus</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Pressable>
   );
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e6",
-    padding: 14,
-    gap: 6,
+    marginVertical: 5,
+    borderRadius: R.lg,
+    flexDirection: "row",
+    overflow: "hidden",
+    ...shadow.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    opacity: 0.75,
+  },
+  rail: {
+    width: 4,
+    borderRadius: 0,
+    flexShrink: 0,
+  },
+  content: {
+    flex: 1,
+    padding: 13,
+    gap: 6,
   },
   topRow: {
     flexDirection: "row",
@@ -114,32 +152,31 @@ const styles = StyleSheet.create({
   courseLabel: {
     flex: 1,
     fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
-  kindBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 6,
+  kindPill: {
+    borderRadius: R.full,
+    paddingHorizontal: 8,
     paddingVertical: 2,
   },
   kindText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: F.bold,
     textTransform: "capitalize",
   },
   title: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     lineHeight: 20,
   },
   bottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 2,
     gap: 8,
   },
   metaRow: {
@@ -151,46 +188,41 @@ const styles = StyleSheet.create({
   },
   estMinutes: {
     fontSize: 12,
-    color: "#666",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   due: {
     fontSize: 12,
-    color: "#555",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   dueOverdue: {
-    color: "#b00020",
-    fontWeight: "600",
+    color: C.error,
+    fontFamily: F.bold,
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 7,
   },
   doneButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#bbb",
+    borderRadius: R.full,
+    borderWidth: 2,
+    borderColor: C.mint,
     alignItems: "center",
     justifyContent: "center",
   },
-  doneButtonText: {
-    fontSize: 14,
-    color: "#555",
-    fontWeight: "600",
-  },
   focusButton: {
-    backgroundColor: "#111",
-    borderRadius: 6,
+    backgroundColor: C.peach,
+    borderRadius: R.md,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   focusButtonText: {
-    color: "#fff",
+    color: C.peachText,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });

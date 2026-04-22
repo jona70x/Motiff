@@ -12,10 +12,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { supabase } from "../lib/supabase";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { completeAssignment, uncompleteAssignment } from "../lib/api/assignments";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentCard } from "../components/AssignmentCard";
+import { Icons } from "../lib/icons";
+import { C, F, R, shadow } from "../theme";
 
 type Props = BottomTabScreenProps<any, "Today">;
 
@@ -35,13 +38,22 @@ const UNDO_DURATION_MS = 4000;
 
 export function TodayScreen({ navigation }: Props) {
   const [assignments, setAssignments] = useState<AssignmentWithCourse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
   const [laterExpanded, setLaterExpanded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [undo, setUndo] = useState<UndoState>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [error, setError]             = useState<string | null>(null);
+  const [undo, setUndo]               = useState<UndoState>(null);
+  const [userInitial, setUserInitial] = useState("?");
+  const undoTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
+
+  // Load avatar initial once on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const letter = session?.user.email?.[0]?.toUpperCase();
+      if (letter) setUserInitial(letter);
+    });
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -137,17 +149,26 @@ export function TodayScreen({ navigation }: Props) {
   if (loading && assignments.length === 0) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
 
   const totalCount = buckets.today.length + buckets.this_week.length + buckets.later.length;
+  const ChevronIcon = laterExpanded ? Icons.chevronDown : Icons.chevronRight;
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Today</Text>
+        <Pressable
+          style={styles.avatarButton}
+          onPress={() => navigation.navigate("Profile")}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+        >
+          <Text style={styles.avatarText}>{userInitial}</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -200,6 +221,7 @@ export function TodayScreen({ navigation }: Props) {
               onToggle={() => setLaterExpanded((v) => !v)}
               navigation={navigation}
               onComplete={handleComplete}
+              ChevronIcon={ChevronIcon}
             />
           </>
         )}
@@ -217,13 +239,10 @@ export function TodayScreen({ navigation }: Props) {
   );
 }
 
+// ── Section components ─────────────────────────────────────────────────────────
+
 function BucketSection({
-  title,
-  assignments,
-  bucketKey,
-  emptyText,
-  navigation,
-  onComplete,
+  title, assignments, bucketKey, emptyText, navigation, onComplete,
 }: {
   title: string;
   assignments: AssignmentWithCourse[];
@@ -236,7 +255,9 @@ function BucketSection({
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionCount}>{assignments.length}</Text>
+        <View style={styles.countPill}>
+          <Text style={styles.countText}>{assignments.length}</Text>
+        </View>
       </View>
       {assignments.length === 0 ? (
         <Text style={styles.sectionEmpty}>{emptyText}</Text>
@@ -258,13 +279,7 @@ function BucketSection({
 }
 
 function CollapsibleSection({
-  title,
-  assignments,
-  bucketKey,
-  expanded,
-  onToggle,
-  navigation,
-  onComplete,
+  title, assignments, bucketKey, expanded, onToggle, navigation, onComplete, ChevronIcon,
 }: {
   title: string;
   assignments: AssignmentWithCourse[];
@@ -273,14 +288,18 @@ function CollapsibleSection({
   onToggle: () => void;
   navigation: Props["navigation"];
   onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets) => void;
+  ChevronIcon: (typeof Icons)[keyof typeof Icons];
 }) {
   return (
     <View style={styles.section}>
       <Pressable style={styles.sectionHeader} onPress={onToggle} accessibilityRole="button">
-        <Text style={styles.sectionTitle}>
-          {title} {expanded ? "▾" : "▸"}
-        </Text>
-        <Text style={styles.sectionCount}>{assignments.length}</Text>
+        <View style={styles.sectionHeaderLeft}>
+          <ChevronIcon size={16} color={C.textSub} />
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+        <View style={styles.countPill}>
+          <Text style={styles.countText}>{assignments.length}</Text>
+        </View>
       </Pressable>
       {expanded &&
         (assignments.length === 0 ? (
@@ -302,10 +321,12 @@ function CollapsibleSection({
   );
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -313,15 +334,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
+    paddingVertical: 14,
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: F.xbold,
+    color: C.text,
+  },
+  avatarButton: {
+    width: 38,
+    height: 38,
+    borderRadius: R.full,
+    backgroundColor: C.indigo,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.card,
+  },
+  avatarText: {
+    fontSize: 16,
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   scrollContent: {
     paddingVertical: 12,
@@ -337,28 +376,29 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontFamily: F.bold,
+    color: C.text,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#777",
+    fontFamily: F.body,
+    color: C.textSub,
     textAlign: "center",
     marginBottom: 16,
   },
   ctaButton: {
-    backgroundColor: "#111",
+    backgroundColor: C.indigo,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: R.full,
   },
   ctaText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
   section: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -366,58 +406,74 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 6,
+    paddingBottom: 8,
+  },
+  sectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  sectionCount: {
     fontSize: 13,
-    fontWeight: "500",
-    color: "#999",
+    fontFamily: F.bold,
+    color: C.textSub,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  countPill: {
+    backgroundColor: C.indigoLight,
+    borderRadius: R.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  countText: {
+    fontSize: 12,
+    fontFamily: F.bold,
+    color: C.indigo,
   },
   sectionEmpty: {
     fontSize: 13,
-    color: "#999",
+    fontFamily: F.body,
+    color: C.textMuted,
     paddingHorizontal: 20,
     paddingVertical: 8,
-    fontStyle: "italic",
   },
   errorBanner: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
+    backgroundColor: C.errorBg,
+    borderRadius: R.md,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 8,
   },
   errorText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 13,
+    fontFamily: F.medium,
   },
   undoBar: {
     position: "absolute",
-    bottom: 24,
+    bottom: 140, // clears the floating tab bar
     left: 16,
     right: 16,
-    backgroundColor: "#222",
-    borderRadius: 10,
-    paddingHorizontal: 16,
+    backgroundColor: C.text,
+    borderRadius: R.xl,
+    paddingHorizontal: 18,
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    ...shadow.float,
   },
   undoText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   undoAction: {
-    color: "#7eb8ff",
+    color: C.lemon,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: F.bold,
   },
 });

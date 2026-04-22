@@ -15,6 +15,7 @@ import { usePomodoro, DEFAULT_DURATION_MS } from "../hooks/usePomodoro";
 import { createFocusSession } from "../lib/api/sessions";
 import { getTransferTargets, type AssignmentWithCourse } from "../lib/api/today";
 import { analytics } from "../lib/analytics";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "FocusTimer">;
 
@@ -34,11 +35,11 @@ export function FocusTimerScreen({ route, navigation }: Props) {
   const { phase, remainingMs, elapsedMs, startedAt, start, pause, resume, cancel, finish } =
     usePomodoro(initialDurationMs);
 
-  const [showBreak, setShowBreak] = useState(false);
+  const [showBreak, setShowBreak]               = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferTargets, setTransferTargets] = useState<AssignmentWithCourse[]>([]);
-  const [loadingTargets, setLoadingTargets] = useState(false);
-  const sessionWritten = useRef(false);
+  const [transferTargets, setTransferTargets]   = useState<AssignmentWithCourse[]>([]);
+  const [loadingTargets, setLoadingTargets]     = useState(false);
+  const sessionWritten  = useRef(false);
   const wasAlreadyPaused = useRef(false);
 
   useEffect(() => {
@@ -68,7 +69,6 @@ export function FocusTimerScreen({ route, navigation }: Props) {
     [assignmentId, startedAt]
   );
 
-  // Timer completed naturally
   useEffect(() => {
     if (phase !== "completed") return;
     const durationMs = elapsedMs;
@@ -105,9 +105,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
     setLoadingTargets(true);
     setShowTransferModal(true);
     try {
-      const targets = assignmentId
-        ? await getTransferTargets(assignmentId)
-        : [];
+      const targets = assignmentId ? await getTransferTargets(assignmentId) : [];
       setTransferTargets(targets);
     } catch {
       setTransferTargets([]);
@@ -125,7 +123,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
     async (target: AssignmentWithCourse) => {
       setShowTransferModal(false);
       const capturedRemaining = remainingMs;
-      const capturedElapsed = elapsedMs;
+      const capturedElapsed   = elapsedMs;
       cancel();
       await writeSession("transferred", capturedElapsed);
       navigation.replace("FocusTimer", {
@@ -178,12 +176,15 @@ export function FocusTimerScreen({ route, navigation }: Props) {
           {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
         </View>
 
+        {/* Pause = white pill / Resume = indigo pill */}
         <Pressable
           style={[styles.primaryButton, isPaused && styles.primaryButtonResume]}
           onPress={handlePauseResume}
           accessibilityRole="button"
         >
-          <Text style={styles.primaryButtonText}>{isPaused ? "Resume" : "Pause"}</Text>
+          <Text style={[styles.primaryButtonText, isPaused && styles.primaryButtonTextResume]}>
+            {isPaused ? "Resume" : "Pause"}
+          </Text>
         </Pressable>
 
         {isActive && (
@@ -198,7 +199,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
 
         {__DEV__ && (
           <Pressable style={styles.devFinishButton} onPress={finish} accessibilityRole="button">
-            <Text style={styles.devFinishText}>⚡ Finish now (dev)</Text>
+            <Text style={styles.devFinishText}>Finish now (dev)</Text>
           </Pressable>
         )}
       </View>
@@ -224,7 +225,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
 
           {loadingTargets ? (
             <View style={styles.modalCenter}>
-              <ActivityIndicator />
+              <ActivityIndicator color={C.indigo} />
             </View>
           ) : transferTargets.length === 0 ? (
             <View style={styles.modalCenter}>
@@ -271,7 +272,7 @@ export function FocusTimerScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: C.dark,
   },
   header: {
     paddingHorizontal: 20,
@@ -279,9 +280,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   cancelText: {
-    color: "#888",
+    color: C.darkMuted,
     fontSize: 16,
-    fontWeight: "500",
+    fontFamily: F.medium,
   },
   body: {
     flex: 1,
@@ -292,8 +293,8 @@ const styles = StyleSheet.create({
   },
   assignmentLabel: {
     fontSize: 17,
-    fontWeight: "600",
-    color: "#ccc",
+    fontFamily: F.medium,
+    color: "#cccccc",
     textAlign: "center",
     lineHeight: 24,
   },
@@ -302,42 +303,45 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 110,
     borderWidth: 4,
-    borderColor: "#fff",
+    borderColor: C.darkText,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
   },
   timerRingPaused: {
-    borderColor: "#555",
+    borderColor: "#555555",
   },
   timerText: {
     fontSize: 52,
     fontWeight: "200",
-    color: "#fff",
+    color: C.darkText,
     letterSpacing: 2,
     fontVariant: ["tabular-nums"],
   },
   pausedLabel: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#666",
+    fontFamily: F.bold,
+    color: "#666666",
     letterSpacing: 2,
   },
   primaryButton: {
-    backgroundColor: "#fff",
-    borderRadius: 30,
+    backgroundColor: C.darkText,
+    borderRadius: R.full,
     paddingHorizontal: 48,
     paddingVertical: 16,
     minWidth: 160,
     alignItems: "center",
   },
   primaryButtonResume: {
-    backgroundColor: "#3355cc",
+    backgroundColor: C.indigo,   // indigo Resume button (S5-6)
   },
   primaryButtonText: {
-    color: "#0a0a0a",
+    color: C.dark,
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: F.bold,
+  },
+  primaryButtonTextResume: {
+    color: C.darkText,
   },
   doneEarlyButton: {
     marginTop: -16,
@@ -345,25 +349,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   doneEarlyText: {
-    color: "#888",
+    color: C.darkMuted,
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: F.medium,
     textDecorationLine: "underline",
   },
   devFinishButton: {
     marginTop: -16,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: R.md,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#333333",
   },
   devFinishText: {
-    color: "#666",
+    color: "#666666",
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: F.medium,
   },
-  // ── Break screen ────────────────────────────────────────────────────────────
+  // ── Break screen ─────────────────────────────────────────────────────────────
   breakBody: {
     flex: 1,
     alignItems: "center",
@@ -376,19 +380,20 @@ const styles = StyleSheet.create({
   },
   breakTitle: {
     fontSize: 26,
-    fontWeight: "700",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.darkText,
   },
   breakSub: {
     fontSize: 15,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.darkMuted,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 8,
   },
   breakButton: {
-    backgroundColor: "#fff",
-    borderRadius: 30,
+    backgroundColor: C.darkText,
+    borderRadius: R.full,
     paddingHorizontal: 48,
     paddingVertical: 16,
     minWidth: 160,
@@ -396,14 +401,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   breakButtonText: {
-    color: "#0a0a0a",
+    color: C.dark,
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: F.bold,
   },
-  // ── Transfer modal ──────────────────────────────────────────────────────────
+  // ── Transfer modal ────────────────────────────────────────────────────────────
   modalRoot: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
   },
   modalHeader: {
     flexDirection: "row",
@@ -412,26 +417,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   modalDismiss: {
     fontSize: 16,
-    color: "#555",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   modalSub: {
     fontSize: 13,
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   modalCenter: {
     flex: 1,
@@ -445,20 +451,20 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontFamily: F.bold,
+    color: C.text,
     textAlign: "center",
   },
   emptyButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
+    backgroundColor: C.indigo,
+    borderRadius: R.full,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   emptyButtonText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
   targetRow: {
     paddingHorizontal: 20,
@@ -466,24 +472,24 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   targetRowPressed: {
-    backgroundColor: "#f0f0f4",
+    backgroundColor: C.borderLight,
   },
   targetCourse: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   targetTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     lineHeight: 20,
   },
   separator: {
     height: 1,
-    backgroundColor: "#f0f0f4",
+    backgroundColor: C.borderLight,
     marginHorizontal: 20,
   },
 });
