@@ -1,7 +1,28 @@
+/**
+ * @module screens/SignInScreen
+ * Sign-in screen for the closed-beta build of Motiff.
+ *
+ * Open sign-ups are disabled in Supabase Auth (Auth → Settings →
+ * "Allow new users to sign up" = off). New users are admitted via
+ * Supabase invite emails sent from the dashboard or admin API.
+ *
+ * Invite flow:
+ *   1. Admin calls supabase.auth.admin.inviteUserByEmail(email, {
+ *        redirectTo: "motiff://auth/callback"
+ *      })
+ *   2. Tester receives a one-time magic link via email.
+ *   3. Tapping the link opens the app via the deep-link handler in auth.ts,
+ *      which calls supabase.auth.setSession() and signs the user in.
+ *   4. On first sign-in the user sees the onboarding carousel.
+ *
+ * Because sign-up is invite-only, this screen only handles sign-in.
+ * The mode toggle ("Create an account") is replaced by a "Closed beta"
+ * banner that explains the invite process clearly.
+ */
+
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,15 +34,18 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 
-type Mode = "signIn" | "signUp";
 type Props = NativeStackScreenProps<any, "SignIn">;
 
+/**
+ * Sign-in form. Sign-up is disabled — new accounts require an invite email
+ * from the Motiff team. Supabase will reject open sign-up attempts at the
+ * API level; this screen reflects that by removing the sign-up path entirely.
+ */
 export function SignInScreen({ navigation }: Props) {
-  const [mode, setMode] = useState<Mode>("signIn");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
 
   const disabled = submitting || email.trim().length === 0 || password.length === 0;
 
@@ -29,28 +53,11 @@ export function SignInScreen({ navigation }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      if (mode === "signUp") {
-        const { data, error: err } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-        });
-        if (err) {
-          setError(err.message);
-          return;
-        }
-        if (!data.session) {
-          Alert.alert(
-            "Check your email",
-            "If email confirmation is enabled, confirm via the link before signing in.",
-          );
-        }
-      } else {
-        const { error: err } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (err) setError(err.message);
-      }
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (err) setError(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -63,9 +70,7 @@ export function SignInScreen({ navigation }: Props) {
     >
       <View style={styles.card}>
         <Text style={styles.title}>Motiff</Text>
-        <Text style={styles.subtitle}>
-          {mode === "signIn" ? "Sign in to continue" : "Create your account"}
-        </Text>
+        <Text style={styles.subtitle}>Sign in to continue</Text>
 
         <TextInput
           style={styles.input}
@@ -77,16 +82,19 @@ export function SignInScreen({ navigation }: Props) {
           value={email}
           onChangeText={setEmail}
           editable={!submitting}
+          returnKeyType="next"
         />
         <TextInput
           style={styles.input}
           placeholder="Password"
           autoCapitalize="none"
-          autoComplete={mode === "signUp" ? "new-password" : "password"}
+          autoComplete="password"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
           editable={!submitting}
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
         />
 
         {error !== null && <Text style={styles.error}>{error}</Text>}
@@ -100,36 +108,26 @@ export function SignInScreen({ navigation }: Props) {
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.primaryButtonText}>
-              {mode === "signIn" ? "Sign in" : "Sign up"}
-            </Text>
+            <Text style={styles.primaryButtonText}>Sign in</Text>
           )}
         </Pressable>
 
-        {/* Forgot password — only shown on sign-in mode */}
-        {mode === "signIn" && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate("ForgotPassword")}
-            style={styles.forgotButton}
-          >
-            <Text style={styles.forgotText}>Forgot password?</Text>
-          </Pressable>
-        )}
-
         <Pressable
           accessibilityRole="button"
-          onPress={() => {
-            setError(null);
-            setMode(mode === "signIn" ? "signUp" : "signIn");
-          }}
+          onPress={() => navigation.navigate("ForgotPassword")}
+          style={styles.forgotButton}
         >
-          <Text style={styles.switchText}>
-            {mode === "signIn"
-              ? "New here? Create an account"
-              : "Already have an account? Sign in"}
-          </Text>
+          <Text style={styles.forgotText}>Forgot password?</Text>
         </Pressable>
+
+        {/* Closed-beta notice — replaces the open sign-up toggle */}
+        <View style={styles.betaBanner}>
+          <Text style={styles.betaTitle}>Closed beta</Text>
+          <Text style={styles.betaBody}>
+            Motiff is currently invite-only. If you received an invite email,
+            tap the link in that email to set your password and sign in.
+          </Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -193,9 +191,23 @@ const styles = StyleSheet.create({
     color: "#3355cc",
     fontSize: 14,
   },
-  switchText: {
+  betaBanner: {
+    backgroundColor: "#f0f4ff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#c8d4f5",
+    padding: 14,
+    marginTop: 4,
+    gap: 4,
+  },
+  betaTitle: {
+    fontSize: 13,
+    fontWeight: "600",
     color: "#3355cc",
-    textAlign: "center",
-    marginTop: 8,
+  },
+  betaBody: {
+    fontSize: 13,
+    color: "#555",
+    lineHeight: 18,
   },
 });
