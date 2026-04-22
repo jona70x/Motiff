@@ -5,6 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   deleteAssignment,
+  completeAssignment,
+  uncompleteAssignment,
   getAssignmentWithCourse,
   type AssignmentWithCourse,
 } from "../lib/api/assignments";
@@ -15,8 +17,9 @@ type Props = NativeStackScreenProps<any, "AssignmentDetail">;
 export function AssignmentDetailScreen({ route, navigation }: Props) {
   const assignmentId = (route.params as any)?.assignmentId || "";
   const [assignment, setAssignment] = useState<AssignmentWithCourse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [completing, setCompleting] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -35,6 +38,24 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
       load();
     }, [load])
   );
+
+  const handleToggleComplete = async () => {
+    if (!assignment) return;
+    setCompleting(true);
+    try {
+      if (assignment.completed_at) {
+        const updated = await uncompleteAssignment(assignmentId);
+        if (updated) setAssignment({ ...assignment, completed_at: null });
+      } else {
+        const updated = await completeAssignment(assignmentId);
+        if (updated) setAssignment({ ...assignment, completed_at: updated.completed_at ?? null });
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not update assignment.");
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -132,9 +153,28 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
         )}
 
         <Pressable
-          style={[styles.deleteBtn, deleting && styles.deleteBtnDisabled]}
+          style={[
+            styles.completeBtn,
+            assignment.completed_at && styles.completeBtnDone,
+            completing && styles.btnDisabled,
+          ]}
+          onPress={handleToggleComplete}
+          disabled={completing || deleting}
+          accessibilityRole="button"
+        >
+          {completing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.completeBtnText}>
+              {assignment.completed_at ? "Mark as incomplete" : "Mark as completed"}
+            </Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          style={[styles.deleteBtn, deleting && styles.btnDisabled]}
           onPress={handleDelete}
-          disabled={deleting}
+          disabled={deleting || completing}
           accessibilityRole="button"
         >
           {deleting ? (
@@ -224,14 +264,29 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
-  deleteBtn: {
+  completeBtn: {
     marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: "#059669",
+    alignItems: "center",
+  },
+  completeBtnDone: {
+    backgroundColor: "#6B7280",
+  },
+  completeBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    marginTop: 12,
     paddingVertical: 14,
     borderRadius: 8,
     backgroundColor: "#b00020",
     alignItems: "center",
   },
-  deleteBtnDisabled: {
+  btnDisabled: {
     opacity: 0.5,
   },
   deleteBtnText: {

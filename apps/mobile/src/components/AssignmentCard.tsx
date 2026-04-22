@@ -4,9 +4,12 @@
  * due pill, optional focus progress bar, gradient Start Focus button.
  */
 
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Icons } from "../lib/icons";
+
+const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
 import { formatRelativeDue, isOverdue, bucketAssignment } from "../lib/time";
 import type { AssignmentWithCourse } from "../lib/api/today";
 import { C, F, G, R, shadow } from "../theme";
@@ -50,6 +53,8 @@ type Props = {
   assignment: AssignmentWithCourse;
   /** Minutes already focused on this assignment; renders a progress bar when > 0. */
   focusedMinutes?: number;
+  /** Override time label (e.g. plan-allocated minutes) when est_minutes is absent. */
+  allocatedMinutes?: number;
   onPress?: () => void;
   onStartFocus: () => void;
   onComplete: () => void;
@@ -64,6 +69,7 @@ type Props = {
 export function AssignmentCard({
   assignment,
   focusedMinutes = 0,
+  allocatedMinutes,
   onPress,
   onStartFocus,
   onComplete,
@@ -77,9 +83,28 @@ export function AssignmentCard({
     ? (KIND_BADGE[assignment.kind.toLowerCase()] ?? null)
     : null;
   const est          = assignment.est_minutes ?? null;
+  // Show est_minutes if available, otherwise fall back to plan-allocated minutes
+  const timeLabel    = est !== null ? est : (allocatedMinutes ?? null);
+
+  // Pulsing opacity animation — only active for overdue items
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (urgency !== "overdue") {
+      pulseAnim.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.35, duration: 550, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 550, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [urgency, pulseAnim]);
 
   const showProgress = focusedMinutes > 0 && est !== null && est > 0;
-  const progress     = showProgress ? Math.min(focusedMinutes / est!, 1) : 0;
+  const progress     = showProgress ? Math.min(focusedMinutes / est, 1) : 0;
 
   const CheckIcon = Icons.check;
 
@@ -90,12 +115,12 @@ export function AssignmentCard({
       accessibilityRole="button"
       accessibilityLabel={assignment.title}
     >
-      {/* Gradient urgency rail — sibling to content, clipped by card overflow:hidden */}
-      <LinearGradient
+      {/* Gradient urgency rail — animates opacity for overdue items */}
+      <AnimatedGradient
         colors={railColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={styles.rail}
+        style={[styles.rail, { opacity: pulseAnim }]}
       />
 
       {/* Card body */}
@@ -122,8 +147,8 @@ export function AssignmentCard({
             <View style={[styles.dot, { backgroundColor: pillStyle.dot }]} />
             <Text style={[styles.pillText, { color: pillStyle.text }]}>{relativeDue}</Text>
           </View>
-          {est !== null && (
-            <Text style={styles.est}>◷ {est} min</Text>
+          {timeLabel !== null && (
+            <Text style={styles.est}>◷ {timeLabel} min</Text>
           )}
         </View>
 

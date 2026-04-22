@@ -31,8 +31,9 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { saveDailyPlan } from "../lib/api/plan";
 import { getUserSettings } from "../lib/api/settings";
+import { completeAssignment } from "../lib/api/assignments";
 import { generateDailyPlan, DEFAULT_DAILY_BUDGET_MINUTES, type PlanBlock } from "../../../../packages/domain/plan/generator";
-import { PlanBlockCard } from "../components/PlanBlockCard";
+import { AssignmentCard } from "../components/AssignmentCard";
 import { analytics } from "../lib/analytics";
 import { Icons } from "../lib/icons";
 import { C, F, R, shadow } from "../theme";
@@ -42,13 +43,11 @@ import { C, F, R, shadow } from "../theme";
 type Props = BottomTabScreenProps<any, "Plan">;
 
 /**
- * A plan block enriched with display data from its parent assignment.
+ * A plan block enriched with the full assignment for rendering via AssignmentCard.
  * Avoids a second DB fetch by joining in memory after generation.
  */
 type DisplayBlock = PlanBlock & {
-  title: string;
-  courseTitle: string | null;
-  due_at: string | null;
+  assignment: AssignmentWithCourse;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -67,12 +66,20 @@ function enrichBlocks(
   const byId = new Map(assignments.map((a) => [a.id, a]));
   return blocks.map((b) => {
     const a = byId.get(b.assignmentId);
-    return {
-      ...b,
-      title:       a?.title ?? "Unknown assignment",
-      courseTitle: a?.course?.title ?? null,
-      due_at:      a?.due_at ?? null,
+    // Fallback stub so AssignmentCard always gets a valid object
+    const assignment: AssignmentWithCourse = a ?? {
+      id:           b.assignmentId,
+      course_id:    "",
+      user_id:      "",
+      title:        "Unknown assignment",
+      due_at:       null,
+      kind:         null,
+      est_minutes:  null,
+      completed_at: null,
+      created_at:   "",
+      course:       null,
     };
+    return { ...b, assignment };
   });
 }
 
@@ -137,6 +144,15 @@ export function PlanScreen({ navigation }: Props) {
   );
 
   const handleRegenerate = useCallback(() => generate(true), [generate]);
+
+  const handleComplete = useCallback(async (assignmentId: string) => {
+    try {
+      await completeAssignment(assignmentId);
+      generate(false);
+    } catch (err) {
+      console.error("Failed to complete assignment from plan:", err);
+    }
+  }, [generate]);
 
   const RefreshIcon  = Icons.refresh;
   const SettingsIcon = Icons.settings;
@@ -238,22 +254,19 @@ export function PlanScreen({ navigation }: Props) {
             <Text style={styles.listSubheader}>Prioritised by urgency</Text>
           }
           renderItem={({ item }) => (
-            <PlanBlockCard
-              position={item.order + 1}
-              title={item.title}
-              courseTitle={item.courseTitle}
-              due_at={item.due_at}
+            <AssignmentCard
+              assignment={item.assignment}
               allocatedMinutes={item.allocatedMinutes}
-              urgencyScore={item.urgencyScore}
               onPress={() =>
                 navigation.navigate("AssignmentDetail", { assignmentId: item.assignmentId })
               }
               onStartFocus={() =>
                 navigation.navigate("FocusTimer", {
                   assignmentId: item.assignmentId,
-                  title:        item.title,
+                  title:        item.assignment.title,
                 })
               }
+              onComplete={() => handleComplete(item.assignmentId)}
             />
           )}
         />
