@@ -32,6 +32,7 @@ import { getCourses, completeCourse, uncompleteCourse, deleteCourseWithStorage }
 import type { Course } from "../lib/schema";
 import { supabase } from "../lib/supabase";
 import { buildListItems, type CourseListItem } from "../lib/courseLifecycle";
+import { CourseCard } from "../components/CourseCard";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -203,46 +204,14 @@ export function CoursesScreen({ navigation }: Props) {
     }
 
     const { course } = item;
-    const isBusy = busyId === course.id;
-    const isCompleted = !!course.completed_at;
 
     return (
-      <Pressable
-        style={[styles.courseCard, isCompleted && styles.courseCardCompleted]}
+      <CourseCard
+        course={course}
+        isBusy={busyId === course.id}
         onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
-        accessibilityRole="button"
-        accessibilityLabel={`${course.title}${isCompleted ? ", completed" : ""}`}
-      >
-        {/* Title + term */}
-        <View style={styles.courseCardBody}>
-          <Text style={[styles.courseTitle, isCompleted && styles.courseTitleCompleted]}>
-            {course.title}
-          </Text>
-          {course.term && (
-            <Text style={styles.courseTerm}>{course.term}</Text>
-          )}
-          {isCompleted && (
-            <Text style={styles.completedBadge}>
-              Completed {new Date(course.completed_at!).toLocaleDateString()}
-            </Text>
-          )}
-        </View>
-
-        {/* Action menu trigger */}
-        {isBusy ? (
-          <ActivityIndicator size="small" color="#888" style={styles.menuTrigger} />
-        ) : (
-          <Pressable
-            style={styles.menuTrigger}
-            onPress={() => handleCourseMenu(course)}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Course options"
-          >
-            <Text style={styles.menuTriggerText}>•••</Text>
-          </Pressable>
-        )}
-      </Pressable>
+        onMenu={() => handleCourseMenu(course)}
+      />
     );
   }, [busyId, navigation, handleCourseMenu]);
 
@@ -351,52 +320,6 @@ const styles = StyleSheet.create({
     color: "#aaa",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  courseCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginVertical: 5,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e6",
-  },
-  courseCardCompleted: {
-    backgroundColor: "#fafafa",
-    borderColor: "#e8e8ee",
-  },
-  courseCardBody: {
-    flex: 1,
-    gap: 3,
-  },
-  courseTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-  },
-  courseTitleCompleted: {
-    color: "#888",
-  },
-  courseTerm: {
-    fontSize: 13,
-    color: "#777",
-  },
-  completedBadge: {
-    fontSize: 11,
-    color: "#aaa",
-    marginTop: 2,
-  },
-  menuTrigger: {
-    padding: 8,
-    marginLeft: 8,
-  },
-  menuTriggerText: {
-    fontSize: 16,
-    color: "#bbb",
-    letterSpacing: 1,
   },
   emptyState: {
     alignItems: "center",

@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
   RotateCcw,
   Check,
   Play,
@@ -42,8 +43,9 @@ export const Icons = {
   close:    X,
 
   // UI chrome
-  chevronDown:  ChevronDown,
-  chevronLeft:  ChevronLeft,
-  chevronRight: ChevronRight,
-  clock:        Clock,
+  chevronDown:    ChevronDown,
+  chevronLeft:    ChevronLeft,
+  chevronRight:   ChevronRight,
+  moreHorizontal: MoreHorizontal,
+  clock:          Clock,
 } as const;
