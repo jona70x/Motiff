@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy — Apple Privacy Manifest for Motiff.
+  Required for App Store submission (Xcode 15+, iOS 17.4+).
+
+  Injected into the Xcode target by plugins/withPrivacyManifest.js
+  during `expo prebuild`. Do not edit the ios/ copy directly; edit
+  this source file and re-run prebuild.
+
+  APIs declared:
+    NSPrivacyAccessedAPICategoryUserDefaults (CA92.1)
+      AsyncStorage (onboarding flag, persisted session cache) uses the
+      UserDefaults system via @react-native-async-storage/async-storage.
+
+    NSPrivacyAccessedAPICategoryFileTimestamp (C617.1)
+      The document picker reads file modification dates when the user
+      selects a PDF for upload.
+
+  Data collected: none beyond what Supabase processes server-side.
+  The app does not collect device identifiers, location, contacts, or
+  health data, and does not participate in cross-app tracking.
+-->
+<plist version="1.0">
+<dict>
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- CA92.1: Access info from the same app that wrote to UserDefaults -->
+        <string>CA92.1</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- C617.1: Display file timestamps to the user within the app -->
+        <string>C617.1</string>
+      </array>
+    </dict>
+  </array>
+
+  <key>NSPrivacyCollectedDataTypes</key>
+  <array/>
+
+  <key>NSPrivacyTracking</key>
+  <false/>
+  <key>NSPrivacyTrackingDomains</key>
+  <array/>
+</dict>
+</plist>

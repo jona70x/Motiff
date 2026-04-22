@@ -13,12 +13,15 @@ type ExtractResponse =
 const corsHeaders = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
   }
 
   let serviceClient: ReturnType<typeof createClient> | null = null;
@@ -131,8 +134,11 @@ Deno.serve(async (req: Request) => {
     } catch (err) {
       await sentryCapture(err, { upload_id, userId });
       posthogCapture(userId, "extraction_failed_server", { upload_id, reason: String(err) });
+      // Log full error server-side; return a generic message to avoid leaking
+      // Claude API details (model name, rate-limit headers, etc.) to the client.
+      console.error("extract-syllabus claude error:", err);
       await setUploadFailed(serviceClient, upload_id, String(err));
-      return json<ExtractResponse>({ ok: false, reason: "error", message: String(err) }, 500);
+      return json<ExtractResponse>({ ok: false, reason: "error", message: "Extraction failed" }, 500);
     }
 
     const { candidates, tokensIn, tokensOut, usdEstimate, partial } = extractionResult;
@@ -170,8 +176,11 @@ Deno.serve(async (req: Request) => {
         .insert(rows);
 
       if (insertErr) {
+        // Log full DB error server-side; return a generic message to avoid
+        // leaking Postgres constraint or syntax details to the client.
+        console.error("extract-syllabus candidate insert error:", insertErr.message);
         await setUploadFailed(serviceClient, upload_id, `Candidate insert failed: ${insertErr.message}`);
-        return json<ExtractResponse>({ ok: false, reason: "error", message: insertErr.message }, 500);
+        return json<ExtractResponse>({ ok: false, reason: "error", message: "Internal error" }, 500);
       }
     }
 
@@ -193,8 +202,10 @@ Deno.serve(async (req: Request) => {
         .eq("id", uploadIdForCleanup)
         .eq("status", "extracting");
     }
+    // Log full error server-side; return a generic message so unhandled
+    // exceptions don't leak internal details (stack traces, DB messages, etc.).
     return json<ExtractResponse>(
-      { ok: false, reason: "error", message: err instanceof Error ? err.message : String(err) },
+      { ok: false, reason: "error", message: "Internal error" },
       500
     );
   }

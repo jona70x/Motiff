@@ -81,9 +81,12 @@ function TabIcon({ label, color }: { label: string; color: string }) {
 
 export function RootNavigator() {
   const { session, loading, recoveryMode } = useAuthSession();
+  const { onboardingChecked, onboardingDone, completeOnboarding } = useOnboarding(
+    session?.user.id ?? null
+  );
 
-  // Resolve initial session before rendering any screen.
-  if (loading) {
+  // Wait for both the session and the onboarding flag before rendering anything.
+  if (loading || !onboardingChecked) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator />
@@ -92,8 +95,7 @@ export function RootNavigator() {
   }
 
   // Onboarding is shown only to authenticated users who haven't seen the carousel.
-  // Users sign up first, then see onboarding — this ensures they have an account
-  // before we ask for notification permissions.
+  // Users sign up first (via invite), then see onboarding on first open.
   if (session && !onboardingDone) {
     return <OnboardingScreen onComplete={completeOnboarding} />;
   }

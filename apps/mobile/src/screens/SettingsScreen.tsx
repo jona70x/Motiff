@@ -25,7 +25,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { getUserSettings, updateUserSettings } from "../lib/api/settings";
+import { getUserSettings, updateUserSettings, deleteAccount } from "../lib/api/settings";
+import { supabase } from "../lib/supabase";
 import { DEFAULT_DAILY_BUDGET_MINUTES } from "../../../../packages/domain/plan/generator";
 import { parseBudgetInput } from "../../../../packages/domain/plan/budget";
 
@@ -40,6 +41,7 @@ export function SettingsScreen({ navigation }: Props) {
   const [budgetText, setBudgetText] = useState("");
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
+  const [deleting, setDeleting]     = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
   // Load existing settings on mount
@@ -93,6 +95,55 @@ export function SettingsScreen({ navigation }: Props) {
       setSaving(false);
     }
   }, [budgetText, navigation]);
+
+  /**
+   * Shows a two-step confirmation dialog then calls the delete-account Edge
+   * Function. On success, signs the user out — auth state change drives
+   * navigation back to SignInScreen automatically.
+   *
+   * Two-step: first alert warns the user; second requires them to confirm
+   * again with "Delete my account" to prevent accidental taps.
+   */
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This will permanently erase your account, all courses, assignments, focus sessions, and uploaded syllabi. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Are you absolutely sure?",
+              "Your data cannot be recovered after deletion.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete my account",
+                  style: "destructive",
+                  onPress: async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteAccount();
+                      // Session is now invalid — sign out locally to clear state.
+                      await supabase.auth.signOut();
+                    } catch (err) {
+                      setError(
+                        err instanceof Error ? err.message : "Account deletion failed. Please try again."
+                      );
+                    } finally {
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }, []);
 
   // ── Loading state ─────────────────────────────────────────────────────────
 
@@ -180,6 +231,30 @@ export function SettingsScreen({ navigation }: Props) {
               <Text style={styles.saveButtonText}>Save</Text>
             )}
           </Pressable>
+
+          {/* ── Section: Danger Zone ── */}
+          <Text style={[styles.sectionLabel, styles.dangerLabel]}>Danger Zone</Text>
+
+          <View style={[styles.card, styles.dangerCard]}>
+            <Text style={styles.fieldLabel}>Delete account</Text>
+            <Text style={styles.fieldHint}>
+              Permanently erase your account and all data — courses, assignments,
+              focus sessions, and uploaded syllabi. This cannot be undone.
+            </Text>
+            <Pressable
+              style={[styles.deleteButton, deleting && styles.buttonDisabled]}
+              onPress={handleDeleteAccount}
+              disabled={deleting || saving}
+              accessibilityRole="button"
+              accessibilityLabel="Delete account"
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color="#b00020" />
+              ) : (
+                <Text style={styles.deleteButtonText}>Delete account</Text>
+              )}
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -283,6 +358,29 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  dangerLabel: {
+    color: "#b00020",
+    marginTop: 16,
+  },
+  dangerCard: {
+    borderColor: "#ffcdd2",
+  },
+  deleteButton: {
+    borderWidth: 1,
+    borderColor: "#b00020",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  deleteButtonText: {
+    color: "#b00020",
+    fontSize: 15,
     fontWeight: "600",
   },
 });

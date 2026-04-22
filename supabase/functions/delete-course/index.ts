@@ -31,6 +31,7 @@ type DeleteResponse =
 const corsHeaders = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 function json<T>(body: T, status = 200): Response {
@@ -82,9 +83,11 @@ async function listAllStorageObjects(
 // ── Handler ────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
