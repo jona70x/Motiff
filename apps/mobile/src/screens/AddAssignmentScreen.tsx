@@ -37,6 +37,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
   const [dueAt, setDueAt] = useState<Date | null>(null);
   const [kind, setKind] = useState("");
   const [estMinutes, setEstMinutes] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAndroidPicker, setShowAndroidPicker] = useState<"date" | "time" | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
@@ -139,10 +140,6 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
     [showAndroidPicker]
   );
 
-  const handleIosChange = useCallback((_event: any, selected: Date | undefined) => {
-    if (selected) setDueAt(selected);
-  }, []);
-
   if (loadingExisting) {
     return (
       <SafeAreaView style={styles.root} edges={["top"]}>
@@ -228,29 +225,42 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <View style={styles.dueRow}>
               <Text style={styles.label}>Due date</Text>
               {dueAt && (
-                <Pressable onPress={() => setDueAt(null)} hitSlop={8}>
+                <Pressable
+                  onPress={() => { setDueAt(null); setShowDatePicker(false); }}
+                  hitSlop={8}
+                >
                   <Text style={styles.clearLink}>Clear</Text>
                 </Pressable>
               )}
             </View>
             {Platform.OS === "ios" ? (
-              dueAt ? (
-                <DateTimePicker
-                  value={dueAt}
-                  mode="datetime"
-                  display="compact"
-                  onChange={handleIosChange}
-                  minuteInterval={5}
-                />
-              ) : (
+              <>
                 <Pressable
                   style={styles.setDateButton}
-                  onPress={() => setDueAt(defaultDueDate())}
+                  onPress={() => setShowDatePicker((v) => !v)}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.setDateButtonText}>Set a due date</Text>
+                  <Text style={styles.setDateButtonText}>
+                    {dueAt
+                      ? dueAt.toLocaleString("en-US", {
+                          month: "short", day: "numeric",
+                          hour: "numeric", minute: "2-digit",
+                        })
+                      : "Set a due date"}
+                  </Text>
                 </Pressable>
-              )
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={dueAt ?? defaultDueDate()}
+                    mode="datetime"
+                    display="inline"
+                    onChange={(_, selected) => {
+                      if (selected) setDueAt(selected);
+                    }}
+                    minuteInterval={5}
+                  />
+                )}
+              </>
             ) : (
               <View style={styles.androidDueRow}>
                 <Pressable style={styles.setDateButton} onPress={handleAndroidDatePress}>
