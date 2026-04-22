@@ -31,7 +31,16 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#111111",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
     ]
   }
 }

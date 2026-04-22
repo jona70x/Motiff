@@ -280,8 +280,20 @@ export function CoursesScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No courses yet</Text>
-            <Text style={styles.emptySubtext}>Add a course to get started</Text>
+            <Text style={styles.emptyIcon}>🗂️</Text>
+            <Text style={styles.emptyText}>Add your first course</Text>
+            <Text style={styles.emptySubtext}>
+              Tap the + button to add a course.{"\n"}
+              Upload your syllabus and Motiff will extract assignments automatically.
+            </Text>
+            <Pressable
+              style={styles.emptyButton}
+              onPress={() => navigation.navigate("AddCourse")}
+              accessibilityRole="button"
+              accessibilityLabel="Add your first course"
+            >
+              <Text style={styles.emptyButtonText}>Add a course</Text>
+            </Pressable>
           </View>
         }
       />
@@ -397,16 +409,36 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     paddingTop: 60,
-    gap: 8,
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  emptyIcon: {
+    fontSize: 52,
+    marginBottom: 4,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#555",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111",
+    textAlign: "center",
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
+    color: "#777",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  emptyButton: {
+    marginTop: 8,
+    backgroundColor: "#111",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+  },
+  emptyButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
   fab: {
     position: "absolute",

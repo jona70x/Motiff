@@ -17,6 +17,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAuthSession } from "../lib/auth";
+import { useOnboarding } from "../lib/onboarding";
+import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { SignInScreen } from "../screens/SignInScreen";
 import { ForgotPasswordScreen } from "../screens/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "../screens/ResetPasswordScreen";
@@ -87,6 +89,13 @@ export function RootNavigator() {
         <ActivityIndicator />
       </View>
     );
+  }
+
+  // Onboarding is shown only to authenticated users who haven't seen the carousel.
+  // Users sign up first, then see onboarding — this ensures they have an account
+  // before we ask for notification permissions.
+  if (session && !onboardingDone) {
+    return <OnboardingScreen onComplete={completeOnboarding} />;
   }
 
   return (
