@@ -22,77 +22,51 @@ import { C, F, R, shadow } from "../theme";
 
 type Props = NativeStackScreenProps<any, "Profile">;
 
-/**
- * Displays the user's avatar (email initial), streak badge, lifetime focus
- * stats, and account actions (Settings, Sign out).
- */
 export function ProfileScreen({ navigation }: Props) {
-  const [email, setEmail]       = useState<string | null>(null);
-  const [stats, setStats]       = useState<ProfileStats | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [signingOut, setSigningOut] = useState(false);
+  const [email, setEmail]         = useState<string | null>(null);
+  const [stats, setStats]         = useState<ProfileStats | null>(null);
+  const [emailLoading, setEmailLoading] = useState(true);
+  const [statsError, setStatsError]     = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [signingOut, setSigningOut]     = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
+  // Email comes from the local auth session — always fast, never fails offline
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setEmail(session?.user.email ?? null);
+    }).finally(() => setEmailLoading(false));
+  }, []);
+
+  // Stats come from the RPC — may fail; show zeros gracefully if so
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    setStatsError(false);
     try {
-      const [{ data: sessionData }, profileStats] = await Promise.all([
-        supabase.auth.getSession(),
-        getProfileStats(),
-      ]);
-      setEmail(sessionData.session?.user.email ?? null);
+      const profileStats = await getProfileStats();
       setStats(profileStats);
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : String(e));
+    } catch {
+      setStatsError(true);
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadStats(); }, [loadStats]);
 
   async function handleSignOut() {
     setSigningOut(true);
     await supabase.auth.signOut();
-    // RootNavigator reacts to the auth state change — no explicit nav needed.
   }
 
   const initial = email?.[0]?.toUpperCase() ?? "?";
-
   const SettingsIcon = Icons.settings;
+  const RefreshIcon  = Icons.refresh;
 
-  if (loading) {
+  if (emailLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={C.indigo} />
       </View>
-    );
-  }
-
-  if (loadError !== null) {
-    return (
-      <SafeAreaView style={styles.root} edges={["top"]}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Icons.chevronLeft size={24} color={C.textSub} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <View style={{ width: 24 }} />
-        </View>
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Failed to load profile.</Text>
-          <Text style={styles.errorDetail}>{loadError}</Text>
-          <Pressable style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
     );
   }
 
@@ -144,14 +118,34 @@ export function ProfileScreen({ navigation }: Props) {
         {/* Lifetime stats */}
         <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
-            <Text style={styles.statNumber}>{focusHours}</Text>
-            <Text style={styles.statLabel}>hours focused</Text>
+            {statsLoading ? (
+              <ActivityIndicator color={C.indigo} />
+            ) : (
+              <>
+                <Text style={styles.statNumber}>{focusHours}</Text>
+                <Text style={styles.statLabel}>hours focused</Text>
+              </>
+            )}
           </View>
           <View style={[styles.card, styles.statCard]}>
-            <Text style={styles.statNumber}>{stats?.totalCompleted ?? 0}</Text>
-            <Text style={styles.statLabel}>assignments done</Text>
+            {statsLoading ? (
+              <ActivityIndicator color={C.indigo} />
+            ) : (
+              <>
+                <Text style={styles.statNumber}>{stats?.totalCompleted ?? 0}</Text>
+                <Text style={styles.statLabel}>assignments done</Text>
+              </>
+            )}
           </View>
         </View>
+
+        {/* Stats error — non-blocking, inline retry */}
+        {statsError && !statsLoading && (
+          <Pressable style={styles.statsErrorRow} onPress={loadStats}>
+            <RefreshIcon size={14} color={C.textMuted} />
+            <Text style={styles.statsErrorText}>Stats unavailable — tap to retry</Text>
+          </Pressable>
+        )}
 
         {/* Actions */}
         <View style={styles.section}>
@@ -283,6 +277,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     gap: 4,
+    minHeight: 80,
+    justifyContent: "center",
   },
   statNumber: {
     fontSize: 36,
@@ -295,6 +291,18 @@ const styles = StyleSheet.create({
     fontFamily: F.medium,
     color: C.textSub,
     textAlign: "center",
+  },
+  statsErrorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    justifyContent: "center",
+    paddingVertical: 4,
+  },
+  statsErrorText: {
+    fontSize: 12,
+    fontFamily: F.medium,
+    color: C.textMuted,
   },
   section: {
     backgroundColor: C.surface,
@@ -332,31 +340,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
-  },
-  errorText: {
-    fontSize: 15,
-    fontFamily: F.medium,
-    color: C.textSub,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  errorDetail: {
-    fontSize: 12,
-    fontFamily: F.body,
-    color: C.error,
-    marginBottom: 16,
-    textAlign: "center",
-    paddingHorizontal: 24,
-  },
-  retryButton: {
-    backgroundColor: C.indigo,
-    borderRadius: R.lg,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  retryText: {
-    color: C.textInverse,
-    fontSize: 15,
-    fontFamily: F.bold,
   },
 });
