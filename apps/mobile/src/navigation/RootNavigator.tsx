@@ -2,15 +2,14 @@
  * @module navigation/RootNavigator
  * Root navigation tree for Motiff.
  *
- * Routing priority (evaluated top to bottom):
- *   1. `loading`            → full-screen spinner (resolving session + onboarding flag)
- *   2. `recoveryMode`       → ResetPasswordScreen only (password-reset deep link)
- *   3. `session && !onboarding` → OnboardingScreen (first launch, authenticated users only)
- *   4. `session null`       → SignInScreen + ForgotPasswordScreen
- *   5. `session set`        → MainTabs + all app stack screens
+ * Auth routing logic:
+ *   - `loading`      → full-screen spinner (resolving initial session)
+ *   - `recoveryMode` → ResetPasswordScreen only (user opened a password-reset link)
+ *   - `session null` → SignInScreen + ForgotPasswordScreen
+ *   - `session set`  → MainTabs + all app stack screens
  *
- * Onboarding is gated on an active session so that new users sign up first,
- * then see the carousel — avoiding the awkward pattern of onboarding before auth.
+ * Deep-link handling lives in useAuthSession (lib/auth.ts); this component
+ * only reacts to the state that hook exposes.
  */
 
 import { NavigationContainer } from "@react-navigation/native";
@@ -82,15 +81,9 @@ function TabIcon({ label, color }: { label: string; color: string }) {
 
 export function RootNavigator() {
   const { session, loading, recoveryMode } = useAuthSession();
-  // Pass the user ID so the flag is keyed per-user — prevents a prior user's
-  // completed flag from suppressing the carousel for a new account on the same device.
-  const { onboardingChecked, onboardingDone, completeOnboarding } = useOnboarding(
-    session?.user.id ?? null
-  );
 
-  // Wait for both the session and the onboarding flag before rendering anything.
-  // This prevents a flash between the loading spinner and the wrong screen.
-  if (loading || !onboardingChecked) {
+  // Resolve initial session before rendering any screen.
+  if (loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator />
