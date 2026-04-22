@@ -14,6 +14,10 @@
  *   3. Tapping the link opens the app via the deep-link handler in auth.ts,
  *      which calls supabase.auth.setSession() and signs the user in.
  *   4. On first sign-in the user sees the onboarding carousel.
+ *
+ * Because sign-up is invite-only, this screen only handles sign-in.
+ * The mode toggle ("Create an account") is replaced by a "Closed beta"
+ * banner that explains the invite process clearly.
  */
 
 import { useState } from "react";
@@ -65,65 +69,59 @@ export function SignInScreen({ navigation }: Props) {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.inner}>
-        {/* Bricolage Grotesque wordmark */}
-        <Text style={styles.wordmark}>Motiff</Text>
-        <Text style={styles.tagline}>Study smarter, not harder.</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Motiff</Text>
+        <Text style={styles.subtitle}>Sign in to continue</Text>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={C.textMuted}
-            autoCapitalize="none"
-            autoComplete="email"
-            autoCorrect={false}
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            editable={!submitting}
-            returnKeyType="next"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={C.textMuted}
-            autoCapitalize="none"
-            autoComplete="password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            editable={!submitting}
-            returnKeyType="done"
-            onSubmitEditing={onSubmit}
-          />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          autoCapitalize="none"
+          autoComplete="email"
+          autoCorrect={false}
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          editable={!submitting}
+          returnKeyType="next"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          autoCapitalize="none"
+          autoComplete="password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          editable={!submitting}
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+        />
 
           {error !== null && <Text style={styles.error}>{error}</Text>}
 
-          {/* Hero sign-in button */}
-          <Pressable
-            accessibilityRole="button"
-            style={[styles.heroButton, disabled && styles.buttonDisabled]}
-            disabled={disabled}
-            onPress={onSubmit}
-          >
-            {submitting ? (
-              <ActivityIndicator color={C.lemonText} />
-            ) : (
-              <Text style={[styles.heroButtonText, disabled && styles.heroButtonTextDisabled]}>Sign in</Text>
-            )}
-          </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.primaryButton, disabled && styles.buttonDisabled]}
+          disabled={disabled}
+          onPress={onSubmit}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Sign in</Text>
+          )}
+        </Pressable>
 
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate("ForgotPassword")}
-            style={styles.forgotButton}
-          >
-            <Text style={styles.forgotText}>Forgot password?</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.navigate("ForgotPassword")}
+          style={styles.forgotButton}
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
+        </Pressable>
 
-        {/* Closed-beta notice */}
+        {/* Closed-beta notice — replaces the open sign-up toggle */}
         <View style={styles.betaBanner}>
           <Text style={styles.betaTitle}>Closed beta</Text>
           <Text style={styles.betaBody}>
@@ -211,22 +209,22 @@ const styles = StyleSheet.create({
     fontFamily: F.medium,
   },
   betaBanner: {
-    backgroundColor: C.indigoLight,
-    borderRadius: R.lg,
+    backgroundColor: "#f0f4ff",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#C7D2FE",
+    borderColor: "#c8d4f5",
     padding: 14,
+    marginTop: 4,
     gap: 4,
   },
   betaTitle: {
     fontSize: 13,
-    fontFamily: F.bold,
-    color: C.indigo,
+    fontWeight: "600",
+    color: "#3355cc",
   },
   betaBody: {
     fontSize: 13,
-    fontFamily: F.body,
-    color: C.textSub,
+    color: "#555",
     lineHeight: 18,
   },
 });
