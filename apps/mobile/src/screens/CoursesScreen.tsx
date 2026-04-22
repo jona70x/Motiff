@@ -298,14 +298,6 @@ export function CoursesScreen({ navigation }: Props) {
         }
       />
 
-      <Pressable
-        style={styles.fab}
-        onPress={() => navigation.navigate("AddCourse")}
-        accessibilityRole="button"
-        accessibilityLabel="Add course"
-      >
-        <Text style={styles.fabText}>+</Text>
-      </Pressable>
     </SafeAreaView>
   );
 }
@@ -439,27 +431,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  fabText: {
-    fontSize: 28,
-    fontWeight: "300",
-    color: "#fff",
-    marginBottom: 2,
   },
 });
