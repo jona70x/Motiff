@@ -32,7 +32,15 @@
     "plugins": [
       "@react-native-community/datetimepicker",
       "@sentry/react-native",
-      "./plugins/withPrivacyManifest"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#111111",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
     ]
   }
 }

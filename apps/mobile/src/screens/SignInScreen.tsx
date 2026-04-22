@@ -10,11 +10,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 
 type Mode = "signIn" | "signUp";
+type Props = NativeStackScreenProps<any, "SignIn">;
 
-export function SignInScreen() {
+export function SignInScreen({ navigation }: Props) {
   const [mode, setMode] = useState<Mode>("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +106,17 @@ export function SignInScreen() {
           )}
         </Pressable>
 
+        {/* Forgot password — only shown on sign-in mode */}
+        {mode === "signIn" && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("ForgotPassword")}
+            style={styles.forgotButton}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </Pressable>
+        )}
+
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -171,6 +184,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  forgotButton: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  forgotText: {
+    color: "#3355cc",
+    fontSize: 14,
   },
   switchText: {
     color: "#3355cc",
