@@ -11,7 +11,6 @@
  */
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icons } from "../lib/icons";
@@ -26,52 +25,22 @@ const TAB_ICONS = {
 
 type TabName = keyof typeof TAB_ICONS;
 
-/** Custom floating tab bar with Lucide icons and a lemon FAB that opens an add action sheet. */
+/** Custom floating tab bar with Lucide icons and a lemon FAB that opens the AddCourse modal. */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const [fabOpen, setFabOpen] = useState(false);
 
-  function handleFabAction(screen: "AddAssignment" | "AddCourse") {
-    setFabOpen(false);
-    navigation.navigate(screen);
+  function handleFab() {
+    navigation.navigate("AddCourse");
   }
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom || 12 }]}>
-      {/* Dismiss backdrop */}
-      {fabOpen && (
-        <Pressable style={styles.backdrop} onPress={() => setFabOpen(false)} />
-      )}
-
-      {/* Action sheet card */}
-      {fabOpen && (
-        <View style={styles.actionSheet}>
-          <Pressable
-            style={styles.actionRow}
-            onPress={() => handleFabAction("AddAssignment")}
-            accessibilityRole="button"
-          >
-            <Icons.check size={18} color={C.indigo} strokeWidth={2} />
-            <Text style={styles.actionLabel}>Add Assignment</Text>
-          </Pressable>
-          <View style={styles.actionDivider} />
-          <Pressable
-            style={styles.actionRow}
-            onPress={() => handleFabAction("AddCourse")}
-            accessibilityRole="button"
-          >
-            <Icons.courses size={18} color={C.indigo} strokeWidth={2} />
-            <Text style={styles.actionLabel}>Add Course</Text>
-          </Pressable>
-        </View>
-      )}
-
       {/* Lemon FAB — floats above the pill */}
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        onPress={() => setFabOpen((v) => !v)}
+        onPress={handleFab}
         accessibilityRole="button"
-        accessibilityLabel="Add assignment or course"
+        accessibilityLabel="Add course"
       >
         <Icons.add size={22} color={C.lemonText} strokeWidth={2.5} />
       </Pressable>
@@ -135,38 +104,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-  },
-  backdrop: {
-    position: "absolute",
-    top: -9999,
-    left: -9999,
-    right: -9999,
-    bottom: -9999,
-  },
-  actionSheet: {
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
-    marginBottom: 10,
-    ...shadow.float,
-    overflow: "hidden",
-    minWidth: 200,
-  },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  actionLabel: {
-    fontSize: 15,
-    fontFamily: F.medium,
-    color: C.text,
-  },
-  actionDivider: {
-    height: 1,
-    backgroundColor: C.borderLight,
-    marginHorizontal: 16,
   },
   fab: {
     width: 52,
