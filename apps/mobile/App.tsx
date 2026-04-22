@@ -19,7 +19,7 @@ Sentry.init({
 });
 
 function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
     Nunito_600SemiBold,
     Nunito_700Bold,
@@ -27,10 +27,10 @@ function App() {
     BricolageGrotesque_700Bold,
   });
 
-  // Hold the splash screen until fonts are ready. In a production EAS build
-  // the native splash stays visible while this returns null; in dev there is
-  // a brief blank frame which is acceptable.
-  if (!fontsLoaded) return null;
+  // Hold the splash screen until fonts are ready.
+  // If loading fails (e.g. offline on first cold boot), fall through to the app
+  // with system fonts — better than a permanent blank screen.
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
