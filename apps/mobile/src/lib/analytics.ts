@@ -1,6 +1,6 @@
 import PostHog from "posthog-react-native";
 
-const client = new PostHog("phc_t83s6gbD54522aUn6EQTyegcw2dAm879MbYyj2Aq2VmV", {
+const client = new PostHog(process.env.EXPO_PUBLIC_POSTHOG_KEY ?? "", {
   host: "https://us.i.posthog.com",
 });
 
