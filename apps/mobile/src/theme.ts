@@ -22,6 +22,7 @@ export const C = {
 
   mint:        "#52D9B6",   // "Done" button
   mintBg:      "#E8FDF7",
+  mintCheck:   "#2fd19b",   // checkmark icon inside the done circle (S5-2)
 
   lemon:       "#FFE566",   // floating action button
   lemonDark:   "#CDB800",
@@ -38,6 +39,11 @@ export const C = {
   border:      "#E5E7EB",
   borderLight: "#F3F4F6",
   cardBorder:  "rgba(91,61,245,0.08)",  // S5-2 card border tint
+  doneBorder:  "#d6d4e8",               // done circle border (S5-2)
+
+  // ── Card typography helpers (S5-2) ────────────────────────────────────────────
+  timeText:    "#6b6690",   // est/allocated-time label and time chip text
+  progNote:    "#9793b8",   // progress note text (focused min, percentage)
 
   // ── Urgency rails (left border on cards) ─────────────────────────────────────
   railOverdue: "#EF4444",

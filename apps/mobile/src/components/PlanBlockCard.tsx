@@ -6,6 +6,7 @@
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Icons } from "../lib/icons";
 import { C, F, G, R, shadow } from "../theme";
 
 // ── Urgency helpers ────────────────────────────────────────────────────────────
@@ -71,8 +72,10 @@ export function PlanBlockCard({
   onPress,
   onStartFocus,
 }: PlanBlockCardProps) {
-  const urgency  = getUrgency(due_at, urgencyScore);
-  const pill     = PILL[urgency];
+  const urgency   = getUrgency(due_at, urgencyScore);
+  const pill      = PILL[urgency];
+  const PlayIcon  = Icons.play;
+  const ClockIcon = Icons.clock;
 
   return (
     <Pressable
@@ -97,7 +100,8 @@ export function PlanBlockCard({
             {courseTitle ?? "Unknown course"}
           </Text>
           <View style={styles.timeChip}>
-            <Text style={styles.timeText}>◷ {allocatedMinutes} min</Text>
+            <ClockIcon size={11} color={C.timeText} />
+            <Text style={styles.timeText}>{allocatedMinutes} min</Text>
           </View>
         </View>
       </View>
@@ -127,7 +131,8 @@ export function PlanBlockCard({
             end={{ x: 0, y: 1 }}
             style={[styles.focusButton, shadow.focusBtn]}
           >
-            <Text style={styles.focusButtonText}>▶  Start Focus</Text>
+            <PlayIcon size={10} color="#fff" fill="#fff" />
+            <Text style={styles.focusButtonText}>Start Focus</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
   posText: {
     fontFamily: F.display,
     fontSize:   16,
-    color:      "#fff",
+    color:      C.textInverse,
   },
   topMid: {
     flex:           1,
@@ -196,7 +201,8 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize:   12,
     fontFamily: F.xbold,
-    color:      "#6b6690",
+    color:      C.timeText,
+    marginLeft: 4,
   },
   // Title indented 48px = 36px badge + 12px gap
   title: {
@@ -242,9 +248,10 @@ const styles = StyleSheet.create({
     alignItems:        "center",
   },
   focusButtonText: {
-    color:         "#fff",
+    color:         C.textInverse,
     fontSize:      13,
     fontFamily:    F.xbold,
     letterSpacing: -0.05,
+    marginLeft:    5,
   },
 });

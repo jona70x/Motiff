@@ -107,6 +107,8 @@ export function AssignmentCard({
   const progress     = showProgress ? Math.min(focusedMinutes / est, 1) : 0;
 
   const CheckIcon = Icons.check;
+  const PlayIcon  = Icons.play;
+  const ClockIcon = Icons.clock;
 
   return (
     <Pressable
@@ -148,7 +150,10 @@ export function AssignmentCard({
             <Text style={[styles.pillText, { color: pillStyle.text }]}>{relativeDue}</Text>
           </View>
           {timeLabel !== null && (
-            <Text style={styles.est}>◷ {timeLabel} min</Text>
+            <View style={styles.estRow}>
+              <ClockIcon size={11} color={C.timeText} />
+              <Text style={styles.est}>{timeLabel} min</Text>
+            </View>
           )}
         </View>
 
@@ -180,7 +185,7 @@ export function AssignmentCard({
             accessibilityRole="button"
             accessibilityLabel="Mark done"
           >
-            <CheckIcon size={16} color="#2fd19b" strokeWidth={2.5} />
+            <CheckIcon size={16} color={C.mintCheck} strokeWidth={2.5} />
           </Pressable>
 
           {/* Start Focus: peach gradient with depth shadow */}
@@ -196,7 +201,8 @@ export function AssignmentCard({
               end={{ x: 0, y: 1 }}
               style={[styles.focusButton, shadow.focusBtn]}
             >
-              <Text style={styles.focusButtonText}>▶  Start Focus</Text>
+              <PlayIcon size={10} color="#fff" fill="#fff" />
+              <Text style={styles.focusButtonText}>Start Focus</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -295,10 +301,15 @@ const styles = StyleSheet.create({
     fontFamily:    F.xbold,
     letterSpacing: -0.05,
   },
+  estRow: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           4,
+  },
   est: {
     fontSize:   11,
     fontFamily: F.bold,
-    color:      "#6b6690",
+    color:      C.timeText,
   },
   progTrack: {
     height:       4,
@@ -318,7 +329,7 @@ const styles = StyleSheet.create({
   progNoteText: {
     fontSize:      10,
     fontFamily:    F.xbold,
-    color:         "#9793b8",
+    color:         C.progNote,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
@@ -335,7 +346,7 @@ const styles = StyleSheet.create({
     borderRadius:    R.full,
     backgroundColor: C.surface,
     borderWidth:     2,
-    borderColor:     "#d6d4e8",
+    borderColor:     C.doneBorder,
     alignItems:      "center",
     justifyContent:  "center",
     flexShrink:      0,
@@ -348,9 +359,10 @@ const styles = StyleSheet.create({
     alignItems:        "center",
   },
   focusButtonText: {
-    color:         "#fff",
+    color:         C.textInverse,
     fontSize:      12,
     fontFamily:    F.xbold,
     letterSpacing: -0.05,
+    marginLeft:    5,
   },
 });
