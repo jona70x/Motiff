@@ -19,7 +19,8 @@ import {
   getAssignmentById,
   updateAssignment,
 } from "../lib/api/assignments";
-import { assignmentInsertSchema } from "../lib/schema";
+import { getCourses } from "../lib/api/courses";
+import { assignmentInsertSchema, type Course } from "../lib/schema";
 
 type Props = NativeStackScreenProps<any, "AddAssignment">;
 
@@ -30,10 +31,13 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
   const isEdit = Boolean(assignmentId);
 
   const [courseId, setCourseId] = useState<string>(routeCourseId || "");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [dueAt, setDueAt] = useState<Date | null>(null);
   const [kind, setKind] = useState("");
   const [estMinutes, setEstMinutes] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAndroidPicker, setShowAndroidPicker] = useState<"date" | "time" | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
@@ -62,6 +66,12 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
     };
   }, [assignmentId]);
 
+  useEffect(() => {
+    getCourses()
+      .then((all) => setCourses(all.filter((c) => !c.completed_at)))
+      .finally(() => setCoursesLoading(false));
+  }, []);
+
   const validation = useMemo(() => {
     const estMinutesNum = estMinutes ? Number(estMinutes) : undefined;
     return assignmentInsertSchema.safeParse({
@@ -76,7 +86,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
     ? null
     : validation.error.issues[0]?.message ?? "Invalid input";
 
-  const disabled = loading || !validation.success;
+  const disabled = loading || !validation.success || !courseId;
 
   const handleSubmit = async () => {
     if (!validation.success) {
@@ -130,10 +140,6 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
     [showAndroidPicker]
   );
 
-  const handleIosChange = useCallback((_event: any, selected: Date | undefined) => {
-    if (selected) setDueAt(selected);
-  }, []);
-
   if (loadingExisting) {
     return (
       <SafeAreaView style={styles.root} edges={["top"]}>
@@ -159,6 +165,49 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
         </View>
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+          {/* Course picker — hidden when courseId is pre-set from route params */}
+          {!routeCourseId && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Course</Text>
+              {coursesLoading ? (
+                <ActivityIndicator style={{ alignSelf: "flex-start" }} />
+              ) : courses.length === 0 ? (
+                <Text style={styles.emptyCoursesText}>
+                  No active courses yet. Add a course first.
+                </Text>
+              ) : (
+                <View style={styles.courseList}>
+                  {courses.map((c) => {
+                    const selected = courseId === c.id;
+                    return (
+                      <Pressable
+                        key={c.id}
+                        style={[styles.courseRow, selected && styles.courseRowSelected]}
+                        onPress={() => setCourseId(c.id)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected }}
+                      >
+                        <View style={styles.courseRowInner}>
+                          <Text style={[styles.courseRowTitle, selected && styles.courseRowTitleSelected]}>
+                            {c.title}
+                          </Text>
+                          {c.term ? (
+                            <Text style={styles.courseRowTerm}>{c.term}</Text>
+                          ) : null}
+                        </View>
+                        {selected && (
+                          <View style={styles.courseCheck}>
+                            <Text style={styles.courseCheckText}>✓</Text>
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
             <TextInput
@@ -176,29 +225,42 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <View style={styles.dueRow}>
               <Text style={styles.label}>Due date</Text>
               {dueAt && (
-                <Pressable onPress={() => setDueAt(null)} hitSlop={8}>
+                <Pressable
+                  onPress={() => { setDueAt(null); setShowDatePicker(false); }}
+                  hitSlop={8}
+                >
                   <Text style={styles.clearLink}>Clear</Text>
                 </Pressable>
               )}
             </View>
             {Platform.OS === "ios" ? (
-              dueAt ? (
-                <DateTimePicker
-                  value={dueAt}
-                  mode="datetime"
-                  display="compact"
-                  onChange={handleIosChange}
-                  minuteInterval={5}
-                />
-              ) : (
+              <>
                 <Pressable
                   style={styles.setDateButton}
-                  onPress={() => setDueAt(defaultDueDate())}
+                  onPress={() => setShowDatePicker((v) => !v)}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.setDateButtonText}>Set a due date</Text>
+                  <Text style={styles.setDateButtonText}>
+                    {dueAt
+                      ? dueAt.toLocaleString("en-US", {
+                          month: "short", day: "numeric",
+                          hour: "numeric", minute: "2-digit",
+                        })
+                      : "Set a due date"}
+                  </Text>
                 </Pressable>
-              )
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={dueAt ?? defaultDueDate()}
+                    mode="datetime"
+                    display="inline"
+                    onChange={(_, selected) => {
+                      if (selected) setDueAt(selected);
+                    }}
+                    minuteInterval={5}
+                  />
+                )}
+              </>
             ) : (
               <View style={styles.androidDueRow}>
                 <Pressable style={styles.setDateButton} onPress={handleAndroidDatePress}>
@@ -381,5 +443,56 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  emptyCoursesText: {
+    fontSize: 14,
+    color: "#888",
+    fontStyle: "italic",
+  },
+  courseList: {
+    gap: 8,
+  },
+  courseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d6d6dc",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  courseRowSelected: {
+    borderColor: "#3355cc",
+    backgroundColor: "#f0f4ff",
+  },
+  courseRowInner: {
+    flex: 1,
+    gap: 2,
+  },
+  courseRowTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111",
+  },
+  courseRowTitleSelected: {
+    color: "#3355cc",
+  },
+  courseRowTerm: {
+    fontSize: 12,
+    color: "#888",
+  },
+  courseCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#3355cc",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  courseCheckText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

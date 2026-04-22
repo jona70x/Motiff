@@ -41,19 +41,31 @@ function json<T>(body: T, status = 200): Response {
   });
 }
 
+type StorageItem = {
+  id:       string | null;
+  name:     string;
+  metadata: Record<string, unknown> | null;
+};
+
 /**
- * Lists every storage object under a folder prefix by paginating through
- * 1000-item pages until the API returns fewer than the page limit.
+ * Recursively lists every file object under `prefix` in `bucket`.
  *
- * @param client       - Service-role Supabase client (bypasses storage RLS).
- * @param bucket       - Storage bucket name.
- * @param folderPath   - Folder path to list (without trailing slash).
- * @returns Array of fully-qualified object paths, or throws on list error.
+ * Supabase's list() returns only immediate children. Items with `id === null`
+ * are folder placeholders — we recurse into them. Items with a non-null `id`
+ * are real files and are added to the result.
+ *
+ * Paginates in 1000-item pages so courses with many syllabi are fully swept.
+ * Throws on any list failure so the caller aborts before touching the DB.
+ *
+ * @param client - Service-role Supabase client (bypasses storage RLS).
+ * @param bucket - Storage bucket name.
+ * @param prefix - Path prefix to list, including trailing slash.
+ * @returns Fully-qualified paths of every file under the prefix.
  */
 async function listAllStorageObjects(
   client: ReturnType<typeof createClient>,
   bucket: string,
-  folderPath: string
+  prefix: string
 ): Promise<string[]> {
   const PAGE_SIZE = 1000;
   const allPaths: string[] = [];
@@ -63,17 +75,23 @@ async function listAllStorageObjects(
     const { data, error } = await client
       .storage
       .from(bucket)
-      .list(folderPath, { limit: PAGE_SIZE, offset });
+      .list(prefix, { limit: PAGE_SIZE, offset });
 
-    if (error) throw new Error(`Storage list failed: ${error.message}`);
-    if (!data || data.length === 0) break;
+    if (error) throw new Error(`Storage list failed at '${prefix}': ${error.message}`);
 
-    for (const file of data) {
-      allPaths.push(`${folderPath}/${file.name}`);
+    const page = (data ?? []) as StorageItem[];
+
+    for (const item of page) {
+      if (item.id === null) {
+        // Folder placeholder — recurse to collect leaf files inside it.
+        const subPaths = await listAllStorageObjects(client, bucket, `${prefix}${item.name}/`);
+        allPaths.push(...subPaths);
+      } else {
+        allPaths.push(`${prefix}${item.name}`);
+      }
     }
 
-    // If we received fewer than PAGE_SIZE items, we've reached the end.
-    if (data.length < PAGE_SIZE) break;
+    if (page.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
   }
 
@@ -145,11 +163,11 @@ Deno.serve(async (req: Request) => {
     // ── Storage cleanup ─────────────────────────────────────────────────────────
     // Files are stored at syllabi/{userId}/{courseId}/{timestamp}.ext.
     // Paginate through the list API so courses with >1000 files are fully cleaned up.
-    const folderPath = `${userId}/${course_id}`;
+    const folderPrefix = `${userId}/${course_id}/`;
     let filesRemoved = 0;
 
     try {
-      const paths = await listAllStorageObjects(serviceClient, "syllabi", folderPath);
+      const paths = await listAllStorageObjects(serviceClient, "syllabi", folderPrefix);
 
       if (paths.length > 0) {
         const { error: removeError } = await serviceClient

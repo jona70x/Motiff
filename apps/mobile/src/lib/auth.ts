@@ -32,7 +32,11 @@ import { parseAuthFragment } from "./authHelpers";
 export type AuthState = {
   /** Current Supabase session; null = unauthenticated. */
   session: Session | null;
-  /** True while the initial session is being resolved. */
+  /**
+   * True while the initial session OR the initial deep-link URL is still
+   * resolving. Keeping both gates prevents a brief SignIn flash on cold start
+   * when the app is opened from a password-reset or invite email.
+   */
   loading: boolean;
   /**
    * True when the user opened the app from a password-reset email.
@@ -74,9 +78,15 @@ async function handleAuthDeepLink(url: string): Promise<void> {
  * creates its own subscription (Supabase auth is a broadcast channel).
  */
 export function useAuthSession(): AuthState {
-  const [session, setSession]         = useState<Session | null>(null);
-  const [loading, setLoading]         = useState(true);
+  const [session, setSession]           = useState<Session | null>(null);
+  const [sessionResolved, setSessionResolved] = useState(false);
+  const [urlResolved, setUrlResolved]   = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
+
+  // loading is true until BOTH the initial session AND the initial URL have
+  // resolved. This prevents a SignIn flash when the app cold-starts from a
+  // password-reset or invite email link.
+  const loading = !sessionResolved || !urlResolved;
 
   // Ref guards against stale closure in the auth event callback.
   const recoveryModeRef = useRef(false);
@@ -87,13 +97,11 @@ export function useAuthSession(): AuthState {
     // ── Deep link wiring ──────────────────────────────────────────────────────
 
     // Cold start: app launched directly by tapping an auth email link.
-    // getInitialURL() and getSession() run concurrently. If getInitialURL()
-    // resolves first and calls setSession(), the resulting onAuthStateChange
-    // event (PASSWORD_RECOVERY / SIGNED_IN) will arrive before getSession()
-    // resolves — that's fine because the event handler always wins and
-    // getSession() is only used as a fallback to clear `loading`.
+    // getInitialURL() resolves once the OS hands us the URL. We must wait for
+    // it before clearing `loading` so the navigator never flashes SignInScreen.
     Linking.getInitialURL().then((url) => {
       if (url) handleAuthDeepLink(url);
+      if (mounted) setUrlResolved(true);
     });
 
     // Warm start: app was already running when the link was tapped.
@@ -105,7 +113,7 @@ export function useAuthSession(): AuthState {
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
-      setLoading(false);
+      setSessionResolved(true);
     });
 
     // ── Auth state change subscription ────────────────────────────────────────
@@ -142,9 +150,9 @@ export function useAuthSession(): AuthState {
         default:
           // SIGNED_IN, TOKEN_REFRESHED, INITIAL_SESSION, EMAIL_CONFIRM, etc.
           setSession(next);
-          // setLoading(false) is idempotent — safe to call even if getSession()
-          // already cleared it. Avoids a stale closure on the `loading` state var.
-          setLoading(false);
+          // Mark session as resolved in case the auth event fires before
+          // getSession() resolves (e.g. when a deep link triggers SIGNED_IN).
+          setSessionResolved(true);
       }
     });
 
