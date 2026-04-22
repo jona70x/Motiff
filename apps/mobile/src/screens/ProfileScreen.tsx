@@ -30,7 +30,7 @@ export function ProfileScreen({ navigation }: Props) {
   const [email, setEmail]       = useState<string | null>(null);
   const [stats, setStats]       = useState<ProfileStats | null>(null);
   const [loading, setLoading]   = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   const load = useCallback(async () => {
@@ -43,8 +43,8 @@ export function ProfileScreen({ navigation }: Props) {
       ]);
       setEmail(sessionData.session?.user.email ?? null);
       setStats(profileStats);
-    } catch {
-      setLoadError(true);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function ProfileScreen({ navigation }: Props) {
     );
   }
 
-  if (loadError) {
+  if (loadError !== null) {
     return (
       <SafeAreaView style={styles.root} edges={["top"]}>
         <View style={styles.header}>
@@ -87,6 +87,7 @@ export function ProfileScreen({ navigation }: Props) {
         </View>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load profile.</Text>
+          <Text style={styles.errorDetail}>{loadError}</Text>
           <Pressable style={styles.retryButton} onPress={load}>
             <Text style={styles.retryText}>Retry</Text>
           </Pressable>
@@ -336,8 +337,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: F.medium,
     color: C.textSub,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  errorDetail: {
+    fontSize: 12,
+    fontFamily: F.body,
+    color: C.error,
     marginBottom: 16,
     textAlign: "center",
+    paddingHorizontal: 24,
   },
   retryButton: {
     backgroundColor: C.indigo,
