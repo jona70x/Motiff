@@ -2,6 +2,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Pressable,
   RefreshControl,
@@ -14,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { supabase } from "../lib/supabase";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
-import { completeAssignment, uncompleteAssignment } from "../lib/api/assignments";
+import { completeAssignment, uncompleteAssignment, deleteAssignment } from "../lib/api/assignments";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentCard } from "../components/AssignmentCard";
 import { Icons } from "../lib/icons";
@@ -136,6 +137,31 @@ export function TodayScreen({ navigation }: Props) {
     dismissUndo();
   }, [undo, dismissUndo]);
 
+  const handleDelete = useCallback(
+    (assignment: AssignmentWithCourse) => {
+      Alert.alert(
+        "Delete assignment?",
+        `"${assignment.title}" will be permanently deleted.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              // optimistic remove
+              setAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
+              deleteAssignment(assignment.id).catch(() => {
+                load();
+                setError("Delete failed. Please try again.");
+              });
+            },
+          },
+        ]
+      );
+    },
+    [load]
+  );
+
   const buckets = useMemo<Buckets>(() => {
     const result: Buckets = { today: [], this_week: [], later: [] };
     const now = new Date();
@@ -205,6 +231,7 @@ export function TodayScreen({ navigation }: Props) {
               emptyText="Nothing due today"
               navigation={navigation}
               onComplete={handleComplete}
+              onDelete={handleDelete}
             />
             <BucketSection
               title="This week"
@@ -213,6 +240,7 @@ export function TodayScreen({ navigation }: Props) {
               emptyText="Nothing due this week"
               navigation={navigation}
               onComplete={handleComplete}
+              onDelete={handleDelete}
             />
             <CollapsibleSection
               title="Later"
@@ -222,6 +250,7 @@ export function TodayScreen({ navigation }: Props) {
               onToggle={() => setLaterExpanded((v) => !v)}
               navigation={navigation}
               onComplete={handleComplete}
+              onDelete={handleDelete}
               ChevronIcon={ChevronIcon}
             />
           </>
@@ -243,7 +272,7 @@ export function TodayScreen({ navigation }: Props) {
 // ── Section components ─────────────────────────────────────────────────────────
 
 function BucketSection({
-  title, assignments, bucketKey, emptyText, navigation, onComplete,
+  title, assignments, bucketKey, emptyText, navigation, onComplete, onDelete,
 }: {
   title: string;
   assignments: AssignmentWithCourse[];
@@ -251,6 +280,7 @@ function BucketSection({
   emptyText: string;
   navigation: Props["navigation"];
   onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets) => void;
+  onDelete: (a: AssignmentWithCourse) => void;
 }) {
   return (
     <View style={styles.section}>
@@ -272,6 +302,7 @@ function BucketSection({
               navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
             }
             onComplete={() => onComplete(a, bucketKey)}
+            onDelete={() => onDelete(a)}
           />
         ))
       )}
@@ -280,7 +311,7 @@ function BucketSection({
 }
 
 function CollapsibleSection({
-  title, assignments, bucketKey, expanded, onToggle, navigation, onComplete, ChevronIcon,
+  title, assignments, bucketKey, expanded, onToggle, navigation, onComplete, onDelete, ChevronIcon,
 }: {
   title: string;
   assignments: AssignmentWithCourse[];
@@ -289,6 +320,7 @@ function CollapsibleSection({
   onToggle: () => void;
   navigation: Props["navigation"];
   onComplete: (a: AssignmentWithCourse, bucket: keyof Buckets) => void;
+  onDelete: (a: AssignmentWithCourse) => void;
   ChevronIcon: (typeof Icons)[keyof typeof Icons];
 }) {
   return (
@@ -315,6 +347,7 @@ function CollapsibleSection({
                 navigation.navigate("FocusTimer", { assignmentId: a.id, title: a.title })
               }
               onComplete={() => onComplete(a, bucketKey)}
+              onDelete={() => onDelete(a)}
             />
           ))
         ))}

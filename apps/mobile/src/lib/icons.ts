@@ -13,12 +13,14 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
   RotateCcw,
   Check,
   Play,
   Pause,
   X,
   Clock,
+  Trash2,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -40,10 +42,12 @@ export const Icons = {
   play:     Play,
   pause:    Pause,
   close:    X,
+  trash:    Trash2,
 
   // UI chrome
-  chevronDown:  ChevronDown,
-  chevronLeft:  ChevronLeft,
-  chevronRight: ChevronRight,
-  clock:        Clock,
+  chevronDown:    ChevronDown,
+  chevronLeft:    ChevronLeft,
+  chevronRight:   ChevronRight,
+  moreHorizontal: MoreHorizontal,
+  clock:          Clock,
 } as const;
