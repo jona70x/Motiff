@@ -25,7 +25,9 @@ export const C = {
   mintCheck:   "#2fd19b",   // checkmark icon inside the done circle (S5-2)
 
   lemon:       "#FFE566",   // floating action button
+  lemon2:      "#ffe27a",   // FAB gradient top (S5-3)
   lemonDark:   "#CDB800",
+  lemonShadow: "#d9ab1a",   // FAB depth shadow (S5-3)
   lemonText:   "#3D3300",   // text on lemon
 
   // ── Text ─────────────────────────────────────────────────────────────────────
@@ -34,6 +36,7 @@ export const C = {
   textSub:     "#6B7280",
   textMuted:   "#9CA3AF",
   textInverse: "#ffffff",
+  tabInactive: "#adaacc",   // inactive tab icon/label (S5-3)
 
   // ── Borders ──────────────────────────────────────────────────────────────────
   border:      "#E5E7EB",
@@ -140,6 +143,20 @@ export const shadow = {
     shadowRadius:  0,
     elevation:     3,
   },
+  tabBar: {
+    shadowColor:   "#5b3df5",
+    shadowOffset:  { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius:  28,
+    elevation:     10,
+  },
+  fab: {
+    shadowColor:   "#d9ab1a",
+    shadowOffset:  { width: 0, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius:  0,
+    elevation:     5,
+  },
 } as const;
 
 /** Gradient color pairs for expo-linear-gradient (S5-2). */
@@ -152,6 +169,7 @@ export const G = {
   mintDone:     ["#5de5b5", "#2fd19b"] as [string, string],
   posBadge:     ["#7a5cff", "#5b3df5"] as [string, string],
   progFill:     ["#5b3df5", "#ff7a59"] as [string, string],
+  lemonFab:     ["#ffe27a", "#ffd447"] as [string, string],
 } as const;
 
 /** Font family names loaded by App.tsx via expo-google-fonts. */

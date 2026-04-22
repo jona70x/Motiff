@@ -28,6 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { C, F } from "../theme";
 import { getCourses, completeCourse, uncompleteCourse, deleteCourseWithStorage } from "../lib/api/courses";
 import type { Course } from "../lib/schema";
 import { supabase } from "../lib/supabase";
@@ -295,8 +296,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.display,
+    color: C.ink,
   },
   signOutButton: {
     paddingHorizontal: 12,

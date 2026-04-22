@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { C } from "../theme";
+import { C, F } from "../theme";
 import {
   ActivityIndicator,
   Pressable,
@@ -159,7 +159,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: F.display,
+    color: C.ink,
   },
   scrollContent: {
     padding: 16,
