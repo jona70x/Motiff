@@ -367,22 +367,6 @@ const styles = StyleSheet.create({
     fontFamily: F.display,
     color: C.ink,
   },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  streakBadge: {
-    backgroundColor: C.chipBg,
-    borderRadius: R.full,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  streakText: {
-    fontSize: 13,
-    fontFamily: F.bold,
-    color: C.ink,
-  },
   avatarButton: {
     width: 38,
     height: 38,
