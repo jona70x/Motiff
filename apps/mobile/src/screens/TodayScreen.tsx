@@ -22,6 +22,7 @@ import { AssignmentCard } from "../components/AssignmentCard";
 import { SectionHeader } from "../components/SectionHeader";
 import { useUndoToast } from "../hooks/useUndoToast";
 import { Icons } from "../lib/icons";
+import { analytics } from "../lib/analytics";
 import { C, F, R, shadow } from "../theme";
 
 type Props = BottomTabScreenProps<any, "Today">;
@@ -55,7 +56,9 @@ export function TodayScreen({ navigation }: Props) {
       const letter = session?.user.email?.[0]?.toUpperCase();
       if (letter) setUserInitial(letter);
     });
-    getProfileStats().then((s) => setStreakDays(s.streakDays)).catch(() => {});
+    getProfileStats()
+      .then((s) => setStreakDays(s.streakDays))
+      .catch((err) => analytics.profileStatsLoadFailed({ error: err instanceof Error ? err.message : String(err) }));
   }, []);
 
   const load = useCallback(async () => {

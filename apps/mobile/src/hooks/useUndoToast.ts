@@ -5,7 +5,7 @@
  * only the animation state and the 4-second countdown.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 const UNDO_DURATION_MS = 4000;
@@ -22,6 +22,9 @@ export function useUndoToast<T>() {
   const [undoItem, setUndoItem] = useState<T | null>(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
   const undoTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear pending timer on unmount to prevent state updates on a dead component.
+  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current); }, []);
 
   const dismissUndo = useCallback(() => {
     Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>

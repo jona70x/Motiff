@@ -58,6 +58,11 @@ export const analytics = {
     client.capture("progress_screen_viewed", {});
   },
 
+  // ── Profile / streak (TD-37 sentinel) ────────────────────────────────────
+  profileStatsLoadFailed(props: { error: string }) {
+    client.capture("profile_stats_load_failed", props);
+  },
+
   // ── Plan ───────────────────────────────────────────────────────────────────
   planScreenViewed(props: { blockCount: number; budgetMinutes: number }) {
     client.capture("plan_screen_viewed", props);
