@@ -1,20 +1,25 @@
 /**
  * @module navigation/TabBar
- * Floating pill-shaped tab bar with Lucide icons and a lemon FAB overlay.
+ * S5-3 floating pill tab bar with Lucide SVG icons and lemon FAB.
  *
  * Layout (bottom of screen):
  *
- *                    [ + ]   ← lemon FAB (AddCourse)
- *   ┌────────────────────────────────────────┐
- *   │  Today   Plan   Courses   Progress     │  ← floating pill
- *   └────────────────────────────────────────┘
+ *                    [  +  ]   ← lemon FAB (AddCourse)
+ *   ┌───────────────────────────────────────────┐
+ *   │  Today   Plan   Courses   Progress        │  ← floating pill
+ *   └───────────────────────────────────────────┘
+ *
+ * Active tab: indigo chip (#efeaff, borderRadius 14) + peach dot indicator.
+ * Inactive tab: #adaacc icon/label.
+ * FAB: lemon LinearGradient (#ffe27a → #ffd447) with depth shadow.
  */
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icons } from "../lib/icons";
-import { C, F, R, shadow } from "../theme";
+import { C, F, G, R, shadow } from "../theme";
 
 const TAB_ICONS = {
   Today:    Icons.today,
@@ -25,7 +30,7 @@ const TAB_ICONS = {
 
 type TabName = keyof typeof TAB_ICONS;
 
-/** Custom floating tab bar with Lucide icons and a lemon FAB that opens the AddCourse modal. */
+/** S5-3 floating pill tab bar with lemon FAB. */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -37,12 +42,19 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     <View style={[styles.wrapper, { paddingBottom: insets.bottom || 12 }]}>
       {/* Lemon FAB — floats above the pill */}
       <Pressable
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        style={({ pressed }) => [styles.fabWrap, pressed && styles.fabPressed]}
         onPress={handleFab}
         accessibilityRole="button"
         accessibilityLabel="Add course"
       >
-        <Icons.add size={22} color={C.lemonText} strokeWidth={2.5} />
+        <LinearGradient
+          colors={G.lemonFab}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.fab}
+        >
+          <Icons.add size={24} color={C.ink} strokeWidth={2.5} />
+        </LinearGradient>
       </Pressable>
 
       {/* Floating pill */}
@@ -80,8 +92,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               <View style={[styles.tabIndicator, focused && styles.tabIndicatorActive]}>
                 <IconComponent
                   size={22}
-                  color={focused ? C.indigo : C.textMuted}
-                  strokeWidth={focused ? 2.2 : 1.8}
+                  color={focused ? C.indigo : C.tabInactive}
+                  strokeWidth={focused ? 2.4 : 2}
                 />
               </View>
               <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
@@ -98,61 +110,61 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
-    paddingTop: 0,
     backgroundColor: "transparent",
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
   },
-  fab: {
-    width: 52,
-    height: 52,
-    borderRadius: R.full,
-    backgroundColor: C.lemon,
-    alignItems: "center",
-    justifyContent: "center",
+  fabWrap: {
     marginBottom: 10,
-    ...shadow.float,
+    borderRadius: R.full,
+    ...shadow.fab,
+  },
+  fab: {
+    width:          58,
+    height:         58,
+    borderRadius:   R.full,
+    alignItems:     "center",
+    justifyContent: "center",
   },
   fabPressed: {
-    backgroundColor: C.lemonDark,
-    opacity: 0.9,
+    opacity: 0.88,
   },
   pill: {
-    flexDirection: "row",
-    backgroundColor: C.surface,
-    borderRadius: R.full,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    marginHorizontal: 24,
-    alignSelf: "stretch",
-    ...shadow.float,
+    flexDirection:    "row",
+    backgroundColor:  C.surface,
+    borderRadius:     22,
+    paddingHorizontal: 6,
+    paddingVertical:   8,
+    marginHorizontal: 16,
+    marginBottom:     8,
+    alignSelf:        "stretch",
+    ...shadow.tabBar,
   },
   tab: {
-    flex: 1,
-    alignItems: "center",
+    flex:           1,
+    alignItems:     "center",
     justifyContent: "center",
-    gap: 3,
+    gap:            3,
     paddingVertical: 4,
   },
   tabIndicator: {
-    width: 40,
-    height: 32,
-    borderRadius: R.full,
-    alignItems: "center",
+    width:          44,
+    height:         34,
+    borderRadius:   14,
+    alignItems:     "center",
     justifyContent: "center",
   },
   tabIndicatorActive: {
-    backgroundColor: C.indigoLight,
+    backgroundColor: C.chipBg,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize:   11,
     fontFamily: F.medium,
-    color: C.textMuted,
+    color:      C.tabInactive,
   },
   tabLabelActive: {
     color: C.indigo,
-    fontFamily: F.bold,
   },
 });

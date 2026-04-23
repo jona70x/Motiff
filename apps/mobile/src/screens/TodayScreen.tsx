@@ -379,8 +379,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: F.xbold,
-    color: C.text,
+    fontFamily: F.display,
+    color: C.ink,
   },
   avatarButton: {
     width: 38,

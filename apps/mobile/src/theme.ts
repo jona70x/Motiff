@@ -25,7 +25,9 @@ export const C = {
   mintCheck:   "#2fd19b",   // checkmark icon inside the done circle (S5-2)
 
   lemon:       "#FFE566",   // floating action button
+  lemon2:      "#ffe27a",   // FAB gradient top (S5-3)
   lemonDark:   "#CDB800",
+  lemonShadow: "#d9ab1a",   // FAB depth shadow (S5-3)
   lemonText:   "#3D3300",   // text on lemon
 
   // ── Text ─────────────────────────────────────────────────────────────────────
@@ -34,6 +36,7 @@ export const C = {
   textSub:     "#6B7280",
   textMuted:   "#9CA3AF",
   textInverse: "#ffffff",
+  tabInactive: "#adaacc",   // inactive tab icon/label (S5-3)
 
   // ── Borders ──────────────────────────────────────────────────────────────────
   border:      "#E5E7EB",
