@@ -143,6 +143,20 @@ export const shadow = {
     shadowRadius:  0,
     elevation:     3,
   },
+  tabBar: {
+    shadowColor:   "#5b3df5",
+    shadowOffset:  { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius:  28,
+    elevation:     10,
+  },
+  fab: {
+    shadowColor:   "#d9ab1a",
+    shadowOffset:  { width: 0, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius:  0,
+    elevation:     5,
+  },
 } as const;
 
 /** Gradient color pairs for expo-linear-gradient (S5-2). */
@@ -155,6 +169,7 @@ export const G = {
   mintDone:     ["#5de5b5", "#2fd19b"] as [string, string],
   posBadge:     ["#7a5cff", "#5b3df5"] as [string, string],
   progFill:     ["#5b3df5", "#ff7a59"] as [string, string],
+  lemonFab:     ["#ffe27a", "#ffd447"] as [string, string],
 } as const;
 
 /** Font family names loaded by App.tsx via expo-google-fonts. */
