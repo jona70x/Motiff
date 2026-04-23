@@ -34,6 +34,18 @@ export async function getProfileStats(): Promise<ProfileStats> {
   };
 }
 
+/**
+ * Fetches only the current streak for the TodayScreen badge.
+ * Uses the bounded get_streak_days() RPC — avoids the all-time focus_sessions
+ * aggregation in get_profile_stats() on every cold start (TD-37).
+ */
+export async function getStreakDays(): Promise<number> {
+  const { data, error } = await supabase.rpc("get_streak_days");
+  if (error) throw new Error(error.message);
+  const dates = (data as string[]) ?? [];
+  return computeStreak(dates, localDate(new Date()));
+}
+
 // ── Pure helpers (exported for unit tests) ────────────────────────────────────
 
 /**

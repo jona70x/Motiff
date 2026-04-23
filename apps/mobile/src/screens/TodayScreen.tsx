@@ -16,7 +16,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { supabase } from "../lib/supabase";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { completeAssignment, uncompleteAssignment, deleteAssignment } from "../lib/api/assignments";
-import { getProfileStats } from "../lib/api/profile";
+import { getStreakDays } from "../lib/api/profile";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentCard } from "../components/AssignmentCard";
 import { SectionHeader } from "../components/SectionHeader";
@@ -56,8 +56,8 @@ export function TodayScreen({ navigation }: Props) {
       const letter = session?.user.email?.[0]?.toUpperCase();
       if (letter) setUserInitial(letter);
     });
-    getProfileStats()
-      .then((s) => setStreakDays(s.streakDays))
+    getStreakDays()
+      .then(setStreakDays)
       .catch((err) => analytics.profileStatsLoadFailed({ error: err instanceof Error ? err.message : String(err) }));
   }, []);
 
