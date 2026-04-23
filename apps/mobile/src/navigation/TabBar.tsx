@@ -95,7 +95,6 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   color={focused ? C.indigo : C.tabInactive}
                   strokeWidth={focused ? 2.4 : 2}
                 />
-                {focused && <View style={styles.dot} />}
               </View>
               <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
                 {label}
@@ -160,18 +159,9 @@ const styles = StyleSheet.create({
   tabIndicatorActive: {
     backgroundColor: C.chipBg,
   },
-  dot: {
-    position:     "absolute",
-    top:          4,
-    right:        14,
-    width:        6,
-    height:       6,
-    borderRadius: R.full,
-    backgroundColor: C.peach,
-  },
   tabLabel: {
     fontSize:   11,
-    fontFamily: F.xbold,
+    fontFamily: F.medium,
     color:      C.tabInactive,
   },
   tabLabelActive: {
