@@ -16,8 +16,11 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { supabase } from "../lib/supabase";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { completeAssignment, uncompleteAssignment, deleteAssignment } from "../lib/api/assignments";
+import { getProfileStats } from "../lib/api/profile";
 import { bucketAssignment } from "../lib/time";
 import { AssignmentCard } from "../components/AssignmentCard";
+import { SectionHeader } from "../components/SectionHeader";
+import { useUndoToast } from "../hooks/useUndoToast";
 import { Icons } from "../lib/icons";
 import { C, F, R, shadow } from "../theme";
 
@@ -29,13 +32,11 @@ type Buckets = {
   later: AssignmentWithCourse[];
 };
 
-type UndoState = {
+type UndoItem = {
   assignment: AssignmentWithCourse;
   bucket: keyof Buckets;
   index: number;
-} | null;
-
-const UNDO_DURATION_MS = 4000;
+};
 
 export function TodayScreen({ navigation }: Props) {
   const [assignments, setAssignments] = useState<AssignmentWithCourse[]>([]);
@@ -43,17 +44,18 @@ export function TodayScreen({ navigation }: Props) {
   const [refreshing, setRefreshing]   = useState(false);
   const [laterExpanded, setLaterExpanded] = useState(false);
   const [error, setError]             = useState<string | null>(null);
-  const [undo, setUndo]               = useState<UndoState>(null);
   const [userInitial, setUserInitial] = useState("?");
-  const undoTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const undoOpacity = useRef(new Animated.Value(0)).current;
+  const [streakDays, setStreakDays]   = useState(0);
 
-  // Load avatar initial once on mount
+  const { undoItem, undoOpacity, showUndoToast, dismissUndo } = useUndoToast<UndoItem>();
+
+  // Load avatar initial + streak once on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const letter = session?.user.email?.[0]?.toUpperCase();
       if (letter) setUserInitial(letter);
     });
+    getProfileStats().then((s) => setStreakDays(s.streakDays)).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -73,33 +75,14 @@ export function TodayScreen({ navigation }: Props) {
     useCallback(() => {
       setLoading(true);
       load();
-      return () => {
-        if (undoTimer.current) clearTimeout(undoTimer.current);
-      };
-    }, [load])
+      return () => dismissUndo();
+    }, [load, dismissUndo])
   );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     load();
   }, [load]);
-
-  const dismissUndo = useCallback(() => {
-    Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>
-      setUndo(null)
-    );
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-  }, [undoOpacity]);
-
-  const showUndoToast = useCallback(
-    (state: UndoState) => {
-      setUndo(state);
-      Animated.timing(undoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-      undoTimer.current = setTimeout(dismissUndo, UNDO_DURATION_MS);
-    },
-    [undoOpacity, dismissUndo]
-  );
 
   const handleComplete = useCallback(
     (assignment: AssignmentWithCourse, bucket: keyof Buckets) => {
@@ -121,13 +104,13 @@ export function TodayScreen({ navigation }: Props) {
   );
 
   const handleUndo = useCallback(() => {
-    if (!undo) return;
-    uncompleteAssignment(undo.assignment.id)
+    if (!undoItem) return;
+    uncompleteAssignment(undoItem.assignment.id)
       .then(() => {
         setAssignments((prev) => {
           const next = [...prev];
-          const insertAt = undo.index >= 0 ? Math.min(undo.index, next.length) : next.length;
-          next.splice(insertAt, 0, undo.assignment);
+          const insertAt = undoItem.index >= 0 ? Math.min(undoItem.index, next.length) : next.length;
+          next.splice(insertAt, 0, undoItem.assignment);
           return next;
         });
       })
@@ -135,7 +118,7 @@ export function TodayScreen({ navigation }: Props) {
         setError("Failed to undo. Please refresh.");
       });
     dismissUndo();
-  }, [undo, dismissUndo]);
+  }, [undoItem, dismissUndo]);
 
   const handleDelete = useCallback(
     (assignment: AssignmentWithCourse) => {
@@ -148,7 +131,6 @@ export function TodayScreen({ navigation }: Props) {
             text: "Delete",
             style: "destructive",
             onPress: () => {
-              // optimistic remove
               setAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
               deleteAssignment(assignment.id).catch(() => {
                 load();
@@ -187,15 +169,23 @@ export function TodayScreen({ navigation }: Props) {
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Today</Text>
-        <Pressable
-          style={styles.avatarButton}
-          onPress={() => navigation.navigate("Profile")}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-        >
-          <Text style={styles.avatarText}>{userInitial}</Text>
-        </Pressable>
+
+        <View style={styles.headerRight}>
+          {streakDays > 0 && (
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakText}>🍋 {streakDays}</Text>
+            </View>
+          )}
+          <Pressable
+            style={styles.avatarButton}
+            onPress={() => navigation.navigate("Profile")}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+          >
+            <Text style={styles.avatarText}>{userInitial}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -257,7 +247,7 @@ export function TodayScreen({ navigation }: Props) {
         )}
       </ScrollView>
 
-      {undo && (
+      {undoItem && (
         <Animated.View style={[styles.undoBar, { opacity: undoOpacity }]}>
           <Text style={styles.undoText}>Marked as done</Text>
           <Pressable onPress={handleUndo} accessibilityRole="button">
@@ -284,12 +274,7 @@ function BucketSection({
 }) {
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <View style={styles.countPill}>
-          <Text style={styles.countText}>{assignments.length}</Text>
-        </View>
-      </View>
+      <SectionHeader title={title} count={assignments.length} />
       {assignments.length === 0 ? (
         <Text style={styles.sectionEmpty}>{emptyText}</Text>
       ) : (
@@ -325,15 +310,12 @@ function CollapsibleSection({
 }) {
   return (
     <View style={styles.section}>
-      <Pressable style={styles.sectionHeader} onPress={onToggle} accessibilityRole="button">
-        <View style={styles.sectionHeaderLeft}>
-          <ChevronIcon size={16} color={C.textSub} />
-          <Text style={styles.sectionTitle}>{title}</Text>
-        </View>
-        <View style={styles.countPill}>
-          <Text style={styles.countText}>{assignments.length}</Text>
-        </View>
-      </Pressable>
+      <SectionHeader
+        title={title}
+        count={assignments.length}
+        onPress={onToggle}
+        leftAdornment={<ChevronIcon size={16} color={C.textSub} />}
+      />
       {expanded &&
         (assignments.length === 0 ? (
           <Text style={styles.sectionEmpty}>No later assignments</Text>
@@ -380,6 +362,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontFamily: F.display,
+    color: C.ink,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  streakBadge: {
+    backgroundColor: C.chipBg,
+    borderRadius: R.full,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  streakText: {
+    fontSize: 13,
+    fontFamily: F.bold,
     color: C.ink,
   },
   avatarButton: {
@@ -434,39 +432,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 10,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  sectionHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontFamily: F.bold,
-    color: C.textSub,
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-  },
-  countPill: {
-    backgroundColor: C.indigoLight,
-    borderRadius: R.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
-    alignItems: "center",
-  },
-  countText: {
-    fontSize: 12,
-    fontFamily: F.bold,
-    color: C.indigo,
-  },
   sectionEmpty: {
     fontSize: 13,
     fontFamily: F.body,
@@ -488,7 +453,7 @@ const styles = StyleSheet.create({
   },
   undoBar: {
     position: "absolute",
-    bottom: 140, // clears the floating tab bar
+    bottom: 140,
     left: 16,
     right: 16,
     backgroundColor: C.text,

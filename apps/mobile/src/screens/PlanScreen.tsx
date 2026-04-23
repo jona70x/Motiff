@@ -17,6 +17,7 @@
 import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Pressable,
   RefreshControl,
@@ -31,9 +32,11 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { getTodayAssignments, type AssignmentWithCourse } from "../lib/api/today";
 import { saveDailyPlan } from "../lib/api/plan";
 import { getUserSettings } from "../lib/api/settings";
-import { completeAssignment } from "../lib/api/assignments";
+import { completeAssignment, uncompleteAssignment } from "../lib/api/assignments";
 import { generateDailyPlan, DEFAULT_DAILY_BUDGET_MINUTES, type PlanBlock } from "../../../../packages/domain/plan/generator";
 import { AssignmentCard } from "../components/AssignmentCard";
+import { SubheaderPill } from "../components/SubheaderPill";
+import { useUndoToast } from "../hooks/useUndoToast";
 import { analytics } from "../lib/analytics";
 import { Icons } from "../lib/icons";
 import { C, F, R, shadow } from "../theme";
@@ -95,6 +98,9 @@ export function PlanScreen({ navigation }: Props) {
 
   const isGenerating = useRef(false);
 
+  type UndoItem = { block: DisplayBlock; index: number };
+  const { undoItem, undoOpacity, showUndoToast, dismissUndo } = useUndoToast<UndoItem>();
+
   const generate = useCallback(async (isRegen = false) => {
     if (isGenerating.current) return;
     isGenerating.current = true;
@@ -145,14 +151,36 @@ export function PlanScreen({ navigation }: Props) {
 
   const handleRegenerate = useCallback(() => generate(true), [generate]);
 
-  const handleComplete = useCallback(async (assignmentId: string) => {
-    try {
-      await completeAssignment(assignmentId);
-      generate(false);
-    } catch (err) {
-      console.error("Failed to complete assignment from plan:", err);
-    }
-  }, [generate]);
+  const handleComplete = useCallback((assignmentId: string) => {
+    const index = displayBlocks.findIndex((b) => b.assignmentId === assignmentId);
+    const block = displayBlocks[index];
+    if (!block) return;
+    setDisplayBlocks((prev) => prev.filter((b) => b.assignmentId !== assignmentId));
+    showUndoToast({ block, index });
+    completeAssignment(assignmentId).catch(() => {
+      setDisplayBlocks((prev) => {
+        const next = [...prev];
+        next.splice(Math.min(index, next.length), 0, block);
+        return next;
+      });
+      setError("Failed to mark done. Please try again.");
+      dismissUndo();
+    });
+  }, [displayBlocks, showUndoToast, dismissUndo]);
+
+  const handleUndo = useCallback(() => {
+    if (!undoItem) return;
+    uncompleteAssignment(undoItem.block.assignmentId)
+      .then(() => {
+        setDisplayBlocks((prev) => {
+          const next = [...prev];
+          next.splice(Math.min(undoItem.index, next.length), 0, undoItem.block);
+          return next;
+        });
+      })
+      .catch(() => generate(false));
+    dismissUndo();
+  }, [undoItem, dismissUndo, generate]);
 
   const RefreshIcon  = Icons.refresh;
   const SettingsIcon = Icons.settings;
@@ -200,15 +228,8 @@ export function PlanScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* Indigo subheader pill */}
       {displayBlocks.length > 0 && (
-        <View style={styles.subheaderRow}>
-          <View style={styles.subheaderPill}>
-            <Text style={styles.subheaderText}>
-              {totalAllocated} min · {budgetMinutes} min budget
-            </Text>
-          </View>
-        </View>
+        <SubheaderPill allocatedMinutes={totalAllocated} budgetMinutes={budgetMinutes} />
       )}
 
       {saveWarning && (
@@ -271,6 +292,15 @@ export function PlanScreen({ navigation }: Props) {
           )}
         />
       )}
+
+      {undoItem && (
+        <Animated.View style={[styles.undoBar, { opacity: undoOpacity }]}>
+          <Text style={styles.undoText}>Marked as done</Text>
+          <Pressable onPress={handleUndo} accessibilityRole="button">
+            <Text style={styles.undoAction}>Undo</Text>
+          </Pressable>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -310,24 +340,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 18,
   },
-  subheaderRow: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: C.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+  undoBar: {
+    position: "absolute",
+    bottom: 140,
+    left: 16,
+    right: 16,
+    backgroundColor: C.text,
+    borderRadius: R.xl,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    ...shadow.float,
   },
-  subheaderPill: {
-    alignSelf: "flex-start",
-    backgroundColor: C.indigoLight,
-    borderRadius: R.full,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  undoText: {
+    color: C.textInverse,
+    fontSize: 14,
+    fontFamily: F.medium,
   },
-  subheaderText: {
-    fontSize: 12,
+  undoAction: {
+    color: C.lemon,
+    fontSize: 14,
     fontFamily: F.bold,
-    color: C.indigo,
   },
   listContent: {
     paddingVertical: 12,
