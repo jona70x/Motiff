@@ -1,4 +1,4 @@
-import { computeStreak } from "./profile";
+import { computeStreak } from "../streakMath";
 
 // Fixed reference date for all streak tests: 2026-04-22 (Wednesday)
 const TODAY = "2026-04-22";

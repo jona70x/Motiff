@@ -1,12 +1,15 @@
 /**
  * @module screens/ProfileScreen
- * Personal home base: streak card, lifetime stats, settings + sign-out.
+ * Personal home base: gradient avatar, streak card, lifetime stats,
+ * per-course semester breakdown, settings shortcuts, and account controls.
  * Accessible via the avatar button in Today's header.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,55 +17,151 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
-import { getProfileStats, type ProfileStats } from "../lib/api/profile";
+import { deleteAccount } from "../lib/api/settings";
+import { getWeekSessions, getWeekCompletions } from "../lib/api/progress";
+import { buildWeekSummary } from "../../../../packages/domain/progress/summary";
+import type { SessionRecord, CompletionRecord } from "../../../../packages/domain/progress/summary";
+import { useLifetimeStats } from "../hooks/useLifetimeStats";
+import { useStreak } from "../hooks/useStreak";
 import { Icons } from "../lib/icons";
 import { C, F, R, shadow } from "../theme";
 
 type Props = NativeStackScreenProps<any, "Profile">;
 
+type CourseSummaryRow = {
+  courseId: string;
+  courseTitle: string;
+  minutesFocused: number;
+  assignmentsCompleted: number;
+};
+
+/** Formats a minute count as "Xh Ym", "Xh", or "Ym". */
+function formatMinutes(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function streakSubtext(days: number): string {
+  return days >= 7 ? "Great work!" : "Keep it going";
+}
+
 /**
- * Displays the user's avatar (email initial), streak badge, lifetime focus
- * stats, and account actions (Settings, Sign out).
+ * Shows the user's profile: avatar, streak, lifetime stats,
+ * semester course breakdown, settings shortcuts, and account actions.
  */
 export function ProfileScreen({ navigation }: Props) {
-  const [email, setEmail]       = useState<string | null>(null);
-  const [stats, setStats]       = useState<ProfileStats | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
+  const { stats: lifetimeStats, loading: statsLoading, reload: reloadStats } = useLifetimeStats();
+  const { streakDays, loading: streakLoading, reload: reloadStreak }        = useStreak();
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const [email, setEmail]                     = useState<string | null>(null);
+  const [courseSummaries, setCourseSummaries] = useState<CourseSummaryRow[]>([]);
+  const [dataLoading, setDataLoading]         = useState(true);
+  const [loadError, setLoadError]             = useState(false);
+  const [signingOut, setSigningOut]           = useState(false);
+  const [deleting, setDeleting]               = useState(false);
+
+  const loadSessionData = useCallback(async () => {
+    setDataLoading(true);
     setLoadError(false);
     try {
-      const [{ data: sessionData }, profileStats] = await Promise.all([
+      const [{ data: sessionData }, sessionRecs, completionRecs] = await Promise.all([
         supabase.auth.getSession(),
-        getProfileStats(),
+        getWeekSessions() as Promise<SessionRecord[]>,
+        getWeekCompletions() as Promise<CompletionRecord[]>,
       ]);
       setEmail(sessionData.session?.user.email ?? null);
-      setStats(profileStats);
+      const summary = buildWeekSummary(sessionRecs, completionRecs);
+      setCourseSummaries(summary.courseSummaries);
     } catch {
       setLoadError(true);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSessionData(); }, [loadSessionData]);
 
-  async function handleSignOut() {
-    setSigningOut(true);
-    await supabase.auth.signOut();
-    // RootNavigator reacts to the auth state change — no explicit nav needed.
-  }
+  const isLoading = statsLoading || streakLoading || dataLoading;
 
-  const initial = email?.[0]?.toUpperCase() ?? "?";
+  const handleSignOut = useCallback(() => {
+    Alert.alert(
+      "Sign out?",
+      "You'll need to sign back in to access your account.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign out",
+          style: "destructive",
+          onPress: async () => {
+            setSigningOut(true);
+            await supabase.auth.signOut();
+            // RootNavigator reacts to auth state change automatically.
+          },
+        },
+      ]
+    );
+  }, []);
 
-  const SettingsIcon = Icons.settings;
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This will permanently erase your account, all courses, assignments, focus sessions, and uploaded syllabi. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Are you absolutely sure?",
+              "Your data cannot be recovered after deletion.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete my account",
+                  style: "destructive",
+                  onPress: async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteAccount();
+                      await supabase.auth.signOut();
+                    } catch (err) {
+                      Alert.alert(
+                        "Deletion failed",
+                        err instanceof Error ? err.message : "Please try again."
+                      );
+                    } finally {
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }, []);
 
-  if (loading) {
+  const handleChangePassword = useCallback(async () => {
+    if (!email) return;
+    try {
+      await supabase.auth.resetPasswordForEmail(email);
+      Alert.alert("Check your email", `We sent a password reset link to ${email}.`);
+    } catch {
+      Alert.alert("Error", "Could not send reset email. Please try again.");
+    }
+  }, [email]);
+
+  const initial = email?.[0]?.toUpperCase() ?? "M";
+
+  if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={C.indigo} />
@@ -74,14 +173,15 @@ export function ProfileScreen({ navigation }: Props) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Failed to load profile.</Text>
-        <Pressable style={styles.retryButton} onPress={load}>
+        <Pressable
+          style={styles.retryButton}
+          onPress={() => { loadSessionData(); reloadStats(); reloadStreak(); }}
+        >
           <Text style={styles.retryText}>Retry</Text>
         </Pressable>
       </View>
     );
   }
-
-  const focusHours = stats ? (stats.totalFocusMinutes / 60).toFixed(1) : "0.0";
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
@@ -102,67 +202,130 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Settings"
         >
-          <SettingsIcon size={22} color={C.textSub} />
+          <Icons.settings size={22} color={C.textSub} />
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
+          <LinearGradient
+            colors={["#7a5cff", "#5b3df5"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
             <Text style={styles.avatarText}>{initial}</Text>
-          </View>
+          </LinearGradient>
           <Text style={styles.email} numberOfLines={1}>{email ?? "—"}</Text>
         </View>
 
         {/* Streak card */}
-        <View style={[styles.card, styles.streakCard]}>
-          <View style={styles.streakLeft}>
-            <Text style={styles.streakNumber}>{stats?.streakDays ?? 0}</Text>
-            <Text style={styles.streakLabel}>day streak</Text>
-          </View>
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakEmoji}>🍋</Text>
-          </View>
+        <View style={styles.streakCard}>
+          {streakDays === 0 ? (
+            <Text style={styles.streakZeroText}>Start your first focus session</Text>
+          ) : (
+            <>
+              <View style={styles.streakLeft}>
+                <Text style={styles.streakValue}>✦ {streakDays}-day streak</Text>
+              </View>
+              <Text style={styles.streakSubtext}>{streakSubtext(streakDays)}</Text>
+            </>
+          )}
         </View>
 
         {/* Lifetime stats */}
         <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
-            <Text style={styles.statNumber}>{focusHours}</Text>
-            <Text style={styles.statLabel}>hours focused</Text>
+            <Text style={styles.statNumber}>
+              {lifetimeStats ? formatMinutes(lifetimeStats.totalMinutes) : "—"}
+            </Text>
+            <Text style={styles.statLabel}>TOTAL FOCUSED</Text>
           </View>
           <View style={[styles.card, styles.statCard]}>
-            <Text style={styles.statNumber}>{stats?.totalCompleted ?? 0}</Text>
-            <Text style={styles.statLabel}>assignments done</Text>
+            <Text style={styles.statNumber}>
+              {lifetimeStats ? String(lifetimeStats.completedCount) : "—"}
+            </Text>
+            <Text style={styles.statLabel}>COMPLETED</Text>
           </View>
         </View>
 
-        {/* Actions */}
-        <View style={styles.section}>
+        {/* This week — per-course breakdown */}
+        {courseSummaries.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionLabel}>This week</Text>
+            {courseSummaries.map((c, i) => (
+              <View
+                key={c.courseId}
+                style={[styles.courseRow, i === 0 && styles.courseRowFirst]}
+              >
+                <Text style={styles.courseTitle} numberOfLines={1}>{c.courseTitle}</Text>
+                <Text style={styles.courseMinutes}>{c.minutesFocused} min</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Settings section */}
+        <Text style={styles.groupLabel}>Settings</Text>
+        <View style={styles.card}>
           <Pressable
-            style={[styles.actionRow, { borderTopWidth: 0 }]}
+            style={[styles.actionRow, styles.actionRowFirst]}
             onPress={() => navigation.navigate("Settings")}
             accessibilityRole="button"
           >
-            <SettingsIcon size={18} color={C.textSub} />
-            <Text style={styles.actionLabel}>Study budget & settings</Text>
+            <Icons.settings size={18} color={C.textSub} />
+            <Text style={styles.actionLabel}>Daily budget</Text>
+            <Icons.chevronRight size={16} color={C.textMuted} />
+          </Pressable>
+          <Pressable
+            style={styles.actionRow}
+            onPress={() => Linking.openSettings()}
+            accessibilityRole="button"
+          >
+            <Icons.bell size={18} color={C.textSub} />
+            <Text style={styles.actionLabel}>Notifications</Text>
             <Icons.chevronRight size={16} color={C.textMuted} />
           </Pressable>
         </View>
 
-        {/* Sign out */}
-        <Pressable
-          style={[styles.signOutButton, signingOut && styles.buttonDisabled]}
-          onPress={handleSignOut}
-          disabled={signingOut}
-          accessibilityRole="button"
-        >
-          {signingOut
-            ? <ActivityIndicator color={C.error} size="small" />
-            : <Text style={styles.signOutText}>Sign out</Text>
-          }
-        </Pressable>
+        {/* Account section */}
+        <Text style={styles.groupLabel}>Account</Text>
+        <View style={styles.card}>
+          <Pressable
+            style={[styles.actionRow, styles.actionRowFirst]}
+            onPress={handleChangePassword}
+            accessibilityRole="button"
+          >
+            <Icons.lock size={18} color={C.textSub} />
+            <Text style={styles.actionLabel}>Change password</Text>
+            <Icons.chevronRight size={16} color={C.textMuted} />
+          </Pressable>
+          <Pressable
+            style={styles.actionRow}
+            onPress={handleSignOut}
+            disabled={signingOut}
+            accessibilityRole="button"
+          >
+            <Icons.logOut size={18} color={C.textSub} />
+            {signingOut
+              ? <ActivityIndicator size="small" color={C.textSub} style={{ flex: 1 }} />
+              : <Text style={styles.actionLabel}>Sign out</Text>
+            }
+          </Pressable>
+          <Pressable
+            style={styles.actionRow}
+            onPress={handleDeleteAccount}
+            disabled={deleting}
+            accessibilityRole="button"
+          >
+            <Icons.trash size={18} color={C.error} />
+            {deleting
+              ? <ActivityIndicator size="small" color={C.error} style={{ flex: 1 }} />
+              : <Text style={[styles.actionLabel, styles.destructiveLabel]}>Delete account</Text>
+            }
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -196,7 +359,7 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 20,
     gap: 14,
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
   avatarSection: {
     alignItems: "center",
@@ -207,20 +370,51 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: R.full,
-    backgroundColor: C.indigo,
     alignItems: "center",
     justifyContent: "center",
     ...shadow.card,
   },
   avatarText: {
-    fontSize: 30,
+    fontSize: 28,
     fontFamily: F.bold,
-    color: C.textInverse,
+    fontWeight: "800",
+    color: "#ffffff",
   },
   email: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: F.medium,
     color: C.textSub,
+  },
+  streakCard: {
+    backgroundColor: "#1a1633",
+    borderRadius: 18,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 80,
+  },
+  streakLeft: {
+    flex: 1,
+  },
+  streakValue: {
+    fontSize: 24,
+    fontFamily: F.display,
+    color: C.lemon,
+  },
+  streakSubtext: {
+    fontSize: 12,
+    fontFamily: F.medium,
+    color: "#9793b8",
+  },
+  streakZeroText: {
+    fontSize: 14,
+    fontFamily: F.medium,
+    color: "#6b6690",
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
   },
   card: {
     backgroundColor: C.surface,
@@ -228,73 +422,76 @@ const styles = StyleSheet.create({
     padding: 18,
     ...shadow.card,
   },
-  streakCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: C.indigoLight,
-  },
-  streakLeft: {
-    gap: 2,
-  },
-  streakNumber: {
-    fontSize: 48,
-    fontFamily: F.xbold,
-    color: C.indigo,
-    lineHeight: 52,
-  },
-  streakLabel: {
-    fontSize: 15,
-    fontFamily: F.medium,
-    color: C.indigo,
-  },
-  streakBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: R.full,
-    backgroundColor: C.lemon,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadow.card,
-  },
-  streakEmoji: {
-    fontSize: 36,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
   statCard: {
     flex: 1,
     alignItems: "center",
     gap: 4,
   },
   statNumber: {
-    fontSize: 36,
-    fontFamily: F.xbold,
-    color: C.text,
-    lineHeight: 40,
+    fontSize: 28,
+    fontFamily: F.display,
+    fontWeight: "800",
+    color: "#1a1633",
+    lineHeight: 32,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: F.medium,
     color: C.textSub,
     textAlign: "center",
+    letterSpacing: 0.5,
   },
-  section: {
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
-    overflow: "hidden",
-    ...shadow.card,
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: F.medium,
+    color: C.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  courseRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: C.borderLight,
+  },
+  courseRowFirst: {
+    marginTop: 4,
+  },
+  courseTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: F.medium,
+    color: C.text,
+    paddingRight: 8,
+  },
+  courseMinutes: {
+    fontSize: 14,
+    fontFamily: F.bold,
+    color: C.textSub,
+  },
+  groupLabel: {
+    fontSize: 11,
+    fontFamily: F.medium,
+    color: C.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: -4,
+    marginTop: 4,
   },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingHorizontal: 2,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: C.borderLight,
+  },
+  actionRowFirst: {
+    borderTopWidth: 0,
   },
   actionLabel: {
     flex: 1,
@@ -302,21 +499,8 @@ const styles = StyleSheet.create({
     fontFamily: F.medium,
     color: C.text,
   },
-  signOutButton: {
-    borderRadius: R.lg,
-    borderWidth: 1.5,
-    borderColor: C.error,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  signOutText: {
+  destructiveLabel: {
     color: C.error,
-    fontSize: 15,
-    fontFamily: F.bold,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
   },
   errorText: {
     fontSize: 15,
@@ -332,7 +516,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryText: {
-    color: C.textInverse,
+    color: "#ffffff",
     fontSize: 15,
     fontFamily: F.bold,
   },

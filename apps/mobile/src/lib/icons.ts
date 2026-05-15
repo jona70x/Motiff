@@ -21,6 +21,9 @@ import {
   X,
   Clock,
   Trash2,
+  Bell,
+  Lock,
+  LogOut,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -50,4 +53,7 @@ export const Icons = {
   chevronRight:   ChevronRight,
   moreHorizontal: MoreHorizontal,
   clock:          Clock,
+  bell:           Bell,
+  lock:           Lock,
+  logOut:         LogOut,
 } as const;

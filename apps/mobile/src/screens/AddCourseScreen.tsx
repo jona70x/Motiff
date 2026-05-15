@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createCourse } from "../lib/api/courses";
 
@@ -48,10 +49,16 @@ export function AddCourseScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <SafeAreaView edges={["top"]} style={styles.safeArea}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={16}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+        >
           <Text style={styles.closeButton}>Cancel</Text>
         </Pressable>
         <Text style={styles.title}>New Course</Text>
@@ -99,6 +106,7 @@ export function AddCourseScreen({ navigation }: Props) {
           )}
         </Pressable>
       </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
@@ -107,6 +115,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#f6f6f8",
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
