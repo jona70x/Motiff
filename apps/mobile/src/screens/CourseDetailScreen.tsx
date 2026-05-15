@@ -26,6 +26,7 @@ import { triggerExtraction } from "../lib/api/extraction";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
 import { analytics } from "../lib/analytics";
 import { supabase } from "../lib/supabase";
+import { C, F, R } from "../theme";
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "No due date";
@@ -57,11 +58,11 @@ const STATUS_LABEL: Record<SyllabusUpload["status"], string> = {
 };
 
 const STATUS_COLOR: Record<SyllabusUpload["status"], string> = {
-  pending:    "#888",
-  extracting: "#3355cc",
-  extracted:  "#1a8a3a",
-  failed:     "#b00020",
-  unsupported:"#b00020",
+  pending:    C.textMuted,
+  extracting: C.indigo,
+  extracted:  C.success,
+  failed:     C.error,
+  unsupported:C.error,
 };
 
 export function CourseDetailScreen({ route, navigation }: Props) {
@@ -72,7 +73,6 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [extractingId, setExtractingId] = useState<string | null>(null);
-  // True while a complete/delete operation is in flight
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -109,7 +109,6 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     async (upload: SyllabusUpload) => {
       if (extractingId) return;
       setExtractingId(upload.id);
-      // Optimistic status update
       setUploads((prev) =>
         prev.map((u) => (u.id === upload.id ? { ...u, status: "extracting" as const } : u))
       );
@@ -121,9 +120,9 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         if (!result.ok) {
           analytics.extractionFailed({ uploadId: upload.id, reason: result.reason });
           const msg: Record<string, string> = {
-            flag_off:        "Extraction is not enabled yet.",
-            budget_exceeded: "Monthly extraction budget reached. Try again next month.",
-            unsupported:     "This PDF is image-only and can't be extracted yet.",
+            flag_off:          "Extraction is not enabled yet.",
+            budget_exceeded:   "Monthly extraction budget reached. Try again next month.",
+            unsupported:       "This PDF is image-only and can't be extracted yet.",
             already_processed: "This syllabus has already been processed.",
           };
           Alert.alert("Extraction", msg[result.reason] ?? result.message ?? "Extraction failed.");
@@ -194,7 +193,6 @@ export function CourseDetailScreen({ route, navigation }: Props) {
       } else {
         await uncompleteCourse(course.id);
       }
-      // Reload to surface the updated completed_at in the header badge.
       await loadData();
     } catch (err) {
       Alert.alert("Error", err instanceof Error ? err.message : "Could not update course.");
@@ -236,9 +234,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
     );
   }, [course, lifecycleBusy, navigation]);
 
-  /**
-   * Opens a native action sheet / alert with course-level actions.
-   */
+  /** Opens a native action sheet / alert with course-level actions. */
   const handleCourseMenu = useCallback(() => {
     if (!course) return;
     const isCompleted  = !!course.completed_at;
@@ -303,7 +299,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
       case "assignment":
         return (
           <Pressable
-            style={styles.assignmentCard}
+            style={({ pressed }) => [styles.assignmentCard, pressed && styles.pressed]}
             onPress={() =>
               navigation.navigate("AssignmentDetail", { assignmentId: item.item.id })
             }
@@ -331,7 +327,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Syllabi</Text>
             <Pressable
-              style={styles.uploadBtn}
+              style={({ pressed }) => [styles.uploadBtn, pressed && styles.pressed]}
               onPress={() =>
                 navigation.navigate("SyllabusUpload", {
                   courseId: course?.id,
@@ -364,10 +360,10 @@ export function CourseDetailScreen({ route, navigation }: Props) {
             </View>
             <View style={styles.uploadCardRight}>
               {isExtracting ? (
-                <ActivityIndicator size="small" color="#3355cc" />
+                <ActivityIndicator size="small" color={C.indigo} />
               ) : canExtract ? (
                 <Pressable
-                  style={styles.extractBtn}
+                  style={({ pressed }) => [styles.extractBtn, pressed && styles.pressed]}
                   onPress={() => handleExtract(u)}
                   accessibilityRole="button"
                 >
@@ -375,7 +371,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
                 </Pressable>
               ) : u.status === "extracted" ? (
                 <Pressable
-                  style={styles.viewCandidatesBtn}
+                  style={({ pressed }) => [styles.viewCandidatesBtn, pressed && styles.pressed]}
                   onPress={() => navigation.navigate("SyllabusCandidates", { uploadId: u.id })}
                   accessibilityRole="button"
                 >
@@ -387,7 +383,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
                 </Text>
               )}
               <Pressable
-                style={styles.deleteUploadBtn}
+                style={({ pressed }) => [styles.deleteUploadBtn, pressed && styles.pressed]}
                 onPress={() => handleDeleteUpload(u)}
                 hitSlop={8}
                 accessibilityRole="button"
@@ -414,7 +410,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   if (loading && !course) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
@@ -422,7 +418,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   if (!course) {
     return (
       <View style={styles.center}>
-        <Text>Course not found</Text>
+        <Text style={styles.notFoundText}>Course not found</Text>
       </View>
     );
   }
@@ -430,17 +426,18 @@ export function CourseDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.backButton}>Back</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
+          {({ pressed }) => (
+            <Text style={[styles.backButton, pressed && styles.pressed]}>Back</Text>
+          )}
         </Pressable>
 
-        {/* Right side: completed badge + action menu */}
         <View style={styles.headerRight}>
           {course.completed_at && (
             <Text style={styles.completedBadge}>Completed</Text>
           )}
           {lifecycleBusy ? (
-            <ActivityIndicator size="small" color="#888" />
+            <ActivityIndicator size="small" color={C.textMuted} />
           ) : (
             <Pressable
               onPress={handleCourseMenu}
@@ -448,7 +445,9 @@ export function CourseDetailScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Course options"
             >
-              <Text style={styles.menuTrigger}>•••</Text>
+              {({ pressed }) => (
+                <Text style={[styles.menuTrigger, pressed && styles.pressed]}>•••</Text>
+              )}
             </Pressable>
           )}
         </View>
@@ -468,7 +467,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
       />
 
       <Pressable
-        style={styles.fab}
+        style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
         onPress={() => navigation.navigate("AddAssignment", { courseId })}
         accessibilityRole="button"
       >
@@ -481,12 +480,18 @@ export function CourseDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
+  },
+  notFoundText: {
+    fontSize: 16,
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   header: {
     flexDirection: "row",
@@ -494,9 +499,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   headerRight: {
     flexDirection: "row",
@@ -505,44 +510,49 @@ const styles = StyleSheet.create({
   },
   completedBadge: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
-    backgroundColor: "#f0f0f5",
+    fontFamily: F.bold,
+    color: C.textMuted,
+    backgroundColor: C.borderLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: R.full,
   },
   menuTrigger: {
     fontSize: 16,
-    color: "#bbb",
+    color: C.textMuted,
     letterSpacing: 1,
     padding: 4,
   },
   backButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   courseInfo: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   courseTitle: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     marginBottom: 4,
   },
   courseTerm: {
     fontSize: 14,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
   },
   courseCompletedNote: {
     fontSize: 12,
-    color: "#aaa",
+    fontFamily: F.body,
+    color: C.textMuted,
     marginTop: 4,
   },
   sectionHeader: {
@@ -551,63 +561,65 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e6",
+    borderTopColor: C.border,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   uploadBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: "#f0f0f5",
-    borderRadius: 6,
+    backgroundColor: C.borderLight,
+    borderRadius: R.sm,
   },
   uploadBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#3355cc",
+    fontFamily: F.bold,
+    color: C.indigo,
   },
   assignmentCard: {
     marginHorizontal: 16,
     marginVertical: 6,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
     borderLeftWidth: 4,
-    borderLeftColor: "#3355cc",
+    borderLeftColor: C.indigo,
   },
   assignmentTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     marginBottom: 4,
   },
   assignmentDue: {
     fontSize: 13,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
     marginBottom: 4,
   },
   assignmentMeta: {
     fontSize: 12,
-    color: "#999",
+    fontFamily: F.body,
+    color: C.textMuted,
   },
   uploadCard: {
     marginHorizontal: 16,
     marginVertical: 6,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
     borderWidth: 1,
-    borderColor: "#e0e0e6",
+    borderColor: C.border,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -619,16 +631,17 @@ const styles = StyleSheet.create({
   },
   uploadPath: {
     fontSize: 14,
-    fontWeight: "500",
-    color: "#111",
+    fontFamily: F.medium,
+    color: C.text,
   },
   uploadMeta: {
     fontSize: 12,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.textMuted,
   },
   uploadStatus: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
   uploadCardRight: {
     alignItems: "center",
@@ -636,37 +649,38 @@ const styles = StyleSheet.create({
   },
   uploadError: {
     fontSize: 11,
-    color: "#b00020",
+    fontFamily: F.body,
+    color: C.error,
     marginTop: 2,
   },
   extractBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: "#3355cc",
-    borderRadius: 6,
+    backgroundColor: C.indigo,
+    borderRadius: R.sm,
   },
   extractBtnText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   viewCandidatesBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: "#1a8a3a",
-    borderRadius: 6,
+    backgroundColor: C.success,
+    borderRadius: R.sm,
   },
   viewCandidatesBtnText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   deleteUploadBtn: {
     padding: 4,
   },
   deleteUploadBtnText: {
     fontSize: 12,
-    color: "#aaa",
+    color: C.textMuted,
   },
   emptyState: {
     alignItems: "center",
@@ -675,12 +689,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
   },
   emptySubtext: {
     fontSize: 13,
-    color: "#999",
+    fontFamily: F.body,
+    color: C.textMuted,
     textAlign: "center",
     paddingHorizontal: 32,
   },
@@ -690,8 +705,8 @@ const styles = StyleSheet.create({
     right: 24,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: "#111",
+    borderRadius: R.full,
+    backgroundColor: C.ink,
     alignItems: "center",
     justifyContent: "center",
     elevation: 5,
@@ -703,7 +718,7 @@ const styles = StyleSheet.create({
   fabText: {
     fontSize: 28,
     fontWeight: "300",
-    color: "#fff",
+    color: C.textInverse,
     marginBottom: 2,
   },
 });

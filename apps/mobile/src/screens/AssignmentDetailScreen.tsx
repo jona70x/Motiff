@@ -11,6 +11,7 @@ import {
   type AssignmentWithCourse,
 } from "../lib/api/assignments";
 import { formatRelativeDue } from "../lib/time";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "AssignmentDetail">;
 
@@ -88,7 +89,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
@@ -96,7 +97,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
   if (!assignment) {
     return (
       <View style={styles.center}>
-        <Text>Assignment not found</Text>
+        <Text style={styles.notFoundText}>Assignment not found</Text>
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>Back</Text>
         </Pressable>
@@ -111,14 +112,19 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.backButton}>← Back</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
+          {({ pressed }) => (
+            <Text style={[styles.backButton, pressed && styles.pressed]}>← Back</Text>
+          )}
         </Pressable>
         <Pressable
           onPress={() => navigation.navigate("AddAssignment", { assignmentId })}
           hitSlop={12}
+          accessibilityRole="button"
         >
-          <Text style={styles.editButton}>Edit</Text>
+          {({ pressed }) => (
+            <Text style={[styles.editButton, pressed && styles.pressed]}>Edit</Text>
+          )}
         </Pressable>
       </View>
 
@@ -163,7 +169,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
           accessibilityRole="button"
         >
           {completing ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={C.textInverse} />
           ) : (
             <Text style={styles.completeBtnText}>
               {assignment.completed_at ? "Mark as incomplete" : "Mark as completed"}
@@ -178,7 +184,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
           accessibilityRole="button"
         >
           {deleting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={C.textInverse} />
           ) : (
             <Text style={styles.deleteBtnText}>Delete assignment</Text>
           )}
@@ -191,7 +197,7 @@ export function AssignmentDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -199,25 +205,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
   },
+  notFoundText: {
+    fontSize: 16,
+    fontFamily: F.medium,
+    color: C.textSub,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   backButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
   editButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "600",
+    fontFamily: F.bold,
+    color: C.indigo,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   body: {
     padding: 20,
@@ -225,15 +239,15 @@ const styles = StyleSheet.create({
   },
   courseLabel: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "#666",
+    fontFamily: F.medium,
+    color: C.textSub,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   },
   title: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     marginBottom: 8,
   },
   metaRow: {
@@ -241,57 +255,58 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   metaLabel: {
     fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
+    fontFamily: F.medium,
+    color: C.textSub,
   },
   metaValue: {
     fontSize: 14,
-    color: "#111",
+    fontFamily: F.body,
+    color: C.text,
     flexShrink: 1,
     textAlign: "right",
   },
   backBtn: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#111",
-    borderRadius: 6,
+    backgroundColor: C.ink,
+    borderRadius: R.md,
   },
   backBtnText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: C.textInverse,
+    fontFamily: F.bold,
   },
   completeBtn: {
     marginTop: 24,
     paddingVertical: 14,
-    borderRadius: 8,
-    backgroundColor: "#059669",
+    borderRadius: R.lg,
+    backgroundColor: C.success,
     alignItems: "center",
   },
   completeBtnDone: {
-    backgroundColor: "#6B7280",
+    backgroundColor: C.textSub,
   },
   completeBtnText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
   deleteBtn: {
     marginTop: 12,
     paddingVertical: 14,
-    borderRadius: 8,
-    backgroundColor: "#b00020",
+    borderRadius: R.lg,
+    backgroundColor: C.error,
     alignItems: "center",
   },
   btnDisabled: {
     opacity: 0.5,
   },
   deleteBtnText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });
