@@ -47,6 +47,9 @@ export async function getStreakDays(): Promise<number> {
   return computeStreak(dates, localDate(new Date()));
 }
 
+// ── Pure helpers (exported for unit tests) ────────────────────────────────────
+
+
 // Pure streak helpers live in lib/streakMath.ts (no platform deps — testable).
 // Re-export for any callers that imported directly from this module.
 export { computeStreak, localDate } from "../streakMath";
