@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     color: C.indigo,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   title: {
     fontSize: 18,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   pickButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   pickButtonText: {
     color: C.textInverse,

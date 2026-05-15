@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#FDE68A",
+    borderBottomColor: C.warningBorder,
   },
   warningText: {
     fontSize: 12,

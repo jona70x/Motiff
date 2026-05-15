@@ -26,6 +26,7 @@ import { triggerExtraction } from "../lib/api/extraction";
 import type { Course, Assignment, SyllabusUpload } from "../lib/schema";
 import { analytics } from "../lib/analytics";
 import { supabase } from "../lib/supabase";
+import { Icons } from "../lib/icons";
 import { C, F, R } from "../theme";
 
 function formatDate(dateString: string | null | undefined): string {
@@ -389,7 +390,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel="Remove upload"
               >
-                <Text style={styles.deleteUploadBtnText}>✕</Text>
+                <Icons.close size={14} color={C.textMuted} />
               </Pressable>
             </View>
           </View>
@@ -446,7 +447,7 @@ export function CourseDetailScreen({ route, navigation }: Props) {
               accessibilityLabel="Course options"
             >
               {({ pressed }) => (
-                <Text style={[styles.menuTrigger, pressed && styles.pressed]}>•••</Text>
+                <Icons.moreHorizontal size={20} color={pressed ? C.textSub : C.textMuted} />
               )}
             </Pressable>
           )}
@@ -470,8 +471,9 @@ export function CourseDetailScreen({ route, navigation }: Props) {
         style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
         onPress={() => navigation.navigate("AddAssignment", { courseId })}
         accessibilityRole="button"
+        accessibilityLabel="Add assignment"
       >
-        <Text style={styles.fabText}>+</Text>
+        <Icons.add size={28} color={C.textInverse} />
       </Pressable>
     </SafeAreaView>
   );
@@ -517,19 +519,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: R.full,
   },
-  menuTrigger: {
-    fontSize: 16,
-    color: C.textMuted,
-    letterSpacing: 1,
-    padding: 4,
-  },
   backButton: {
     fontSize: 16,
     fontFamily: F.medium,
     color: C.indigo,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   courseInfo: {
     paddingHorizontal: 20,
@@ -678,10 +674,6 @@ const styles = StyleSheet.create({
   deleteUploadBtn: {
     padding: 4,
   },
-  deleteUploadBtnText: {
-    fontSize: 12,
-    color: C.textMuted,
-  },
   emptyState: {
     alignItems: "center",
     paddingVertical: 20,
@@ -714,11 +706,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  fabText: {
-    fontSize: 28,
-    fontWeight: "300",
-    color: C.textInverse,
-    marginBottom: 2,
   },
 });

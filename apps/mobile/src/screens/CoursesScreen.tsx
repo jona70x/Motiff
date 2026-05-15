@@ -25,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { C, F } from "../theme";
+import { C, F, R } from "../theme";
 import { getCourses, completeCourse, uncompleteCourse, deleteCourseWithStorage } from "../lib/api/courses";
 import type { Course } from "../lib/schema";
 import { supabase } from "../lib/supabase";
@@ -263,7 +263,7 @@ export function CoursesScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -276,9 +276,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   title: {
     fontSize: 28,
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#aaa",
+    fontFamily: F.bold,
+    color: C.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -309,26 +309,27 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
     textAlign: "center",
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#777",
+    fontFamily: F.body,
+    color: C.textSub,
     textAlign: "center",
     lineHeight: 20,
   },
   emptyButton: {
     marginTop: 8,
-    backgroundColor: "#111",
-    borderRadius: 8,
+    backgroundColor: C.ink,
+    borderRadius: R.md,
     paddingVertical: 12,
     paddingHorizontal: 28,
   },
   emptyButtonText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });

@@ -29,7 +29,7 @@ import { getUserSettings, updateUserSettings, deleteAccount } from "../lib/api/s
 import { supabase } from "../lib/supabase";
 import { DEFAULT_DAILY_BUDGET_MINUTES } from "../../../../packages/domain/plan/generator";
 import { parseBudgetInput } from "../../../../packages/domain/plan/budget";
-import { C } from "../theme";
+import { C, F, R } from "../theme";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -38,14 +38,12 @@ type Props = NativeStackScreenProps<any, "Settings">;
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function SettingsScreen({ navigation }: Props) {
-  // Raw text value from the input; we parse to int only on save
   const [budgetText, setBudgetText] = useState("");
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
-  // Load existing settings on mount
   useEffect(() => {
     let cancelled = false;
 
@@ -53,7 +51,6 @@ export function SettingsScreen({ navigation }: Props) {
       try {
         const settings = await getUserSettings();
         if (!cancelled) {
-          // Show the saved value, or the app default as placeholder if none saved yet
           setBudgetText(
             settings.daily_budget_minutes !== null
               ? String(settings.daily_budget_minutes)
@@ -101,9 +98,6 @@ export function SettingsScreen({ navigation }: Props) {
    * Shows a two-step confirmation dialog then calls the delete-account Edge
    * Function. On success, signs the user out — auth state change drives
    * navigation back to SignInScreen automatically.
-   *
-   * Two-step: first alert warns the user; second requires them to confirm
-   * again with "Delete my account" to prevent accidental taps.
    */
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
@@ -127,7 +121,6 @@ export function SettingsScreen({ navigation }: Props) {
                     setDeleting(true);
                     try {
                       await deleteAccount();
-                      // Session is now invalid — sign out locally to clear state.
                       await supabase.auth.signOut();
                     } catch (err) {
                       setError(
@@ -146,21 +139,16 @@ export function SettingsScreen({ navigation }: Props) {
     );
   }, []);
 
-  // ── Loading state ─────────────────────────────────────────────────────────
-
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
-      {/* ── Header ── */}
       <View style={styles.header}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -168,7 +156,9 @@ export function SettingsScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
-          <Text style={styles.backButton}>Back</Text>
+          {({ pressed }) => (
+            <Text style={[styles.backButton, pressed && styles.pressed]}>Back</Text>
+          )}
         </Pressable>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -181,7 +171,6 @@ export function SettingsScreen({ navigation }: Props) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ── Section: Study budget ── */}
           <Text style={styles.sectionLabel}>Study Budget</Text>
 
           <View style={styles.card}>
@@ -196,11 +185,10 @@ export function SettingsScreen({ navigation }: Props) {
               value={budgetText}
               onChangeText={(t) => {
                 setError(null);
-                // Only allow digits
                 setBudgetText(t.replace(/[^0-9]/g, ""));
               }}
               placeholder={String(DEFAULT_DAILY_BUDGET_MINUTES)}
-              placeholderTextColor="#bbb"
+              placeholderTextColor={C.textMuted}
               keyboardType="number-pad"
               returnKeyType="done"
               maxLength={4}
@@ -208,14 +196,12 @@ export function SettingsScreen({ navigation }: Props) {
             />
           </View>
 
-          {/* ── Error banner ── */}
           {error && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
 
-          {/* ── Save button ── */}
           <Pressable
             style={({ pressed }) => [
               styles.saveButton,
@@ -227,13 +213,12 @@ export function SettingsScreen({ navigation }: Props) {
             accessibilityLabel="Save settings"
           >
             {saving ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={C.textInverse} />
             ) : (
               <Text style={styles.saveButtonText}>Save</Text>
             )}
           </Pressable>
 
-          {/* ── Section: Danger Zone ── */}
           <Text style={[styles.sectionLabel, styles.dangerLabel]}>Danger Zone</Text>
 
           <View style={[styles.card, styles.dangerCard]}>
@@ -250,7 +235,7 @@ export function SettingsScreen({ navigation }: Props) {
               accessibilityLabel="Delete account"
             >
               {deleting ? (
-                <ActivityIndicator size="small" color="#b00020" />
+                <ActivityIndicator size="small" color={C.error} />
               ) : (
                 <Text style={styles.deleteButtonText}>Delete account</Text>
               )}
@@ -282,20 +267,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
     gap: 16,
   },
   backButton: {
     fontSize: 15,
-    color: "#555",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   title: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   content: {
     padding: 20,
@@ -303,52 +291,55 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#aaa",
+    fontFamily: F.bold,
+    color: C.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
     borderWidth: 1,
-    borderColor: "#e0e0e6",
+    borderColor: C.border,
     padding: 16,
     gap: 8,
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   fieldHint: {
     fontSize: 12,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.textMuted,
     lineHeight: 18,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d0d0d6",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: R.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: "#111",
+    fontFamily: F.body,
+    color: C.text,
     marginTop: 4,
   },
   errorBanner: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
+    backgroundColor: C.errorBg,
+    borderRadius: R.md,
     padding: 12,
   },
   errorText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 13,
+    fontFamily: F.medium,
   },
   saveButton: {
-    backgroundColor: "#111",
-    borderRadius: 10,
+    backgroundColor: C.ink,
+    borderRadius: R.lg,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
@@ -357,21 +348,22 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   dangerLabel: {
-    color: "#b00020",
+    color: C.error,
     marginTop: 16,
   },
   dangerCard: {
-    borderColor: "#ffcdd2",
+    borderColor: C.errorBorder,
   },
   deleteButton: {
     borderWidth: 1,
-    borderColor: "#b00020",
-    borderRadius: 8,
+    borderColor: C.error,
+    borderRadius: R.md,
     paddingVertical: 10,
     alignItems: "center",
     marginTop: 8,
@@ -380,8 +372,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   deleteButtonText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: F.bold,
   },
 });

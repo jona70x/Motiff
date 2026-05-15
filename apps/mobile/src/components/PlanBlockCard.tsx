@@ -57,7 +57,7 @@ export type PlanBlockCardProps = {
  *
  * Layout:
  * ┌──────────────────────────────────────────────────┐
- * │  [N]   COURSE NAME                   ◷ XX min   │
+ * │  [N]   COURSE NAME                   ~ XX min   │
  * │        Assignment title (Bricolage, indent 48px) │
  * │        Due pill               [Start Focus]      │
  * └──────────────────────────────────────────────────┘

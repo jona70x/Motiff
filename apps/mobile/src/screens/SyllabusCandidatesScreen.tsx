@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   listHeader: {
     paddingHorizontal: 16,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bulkBtnDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   bulkBtnText: {
     fontSize: 14,
