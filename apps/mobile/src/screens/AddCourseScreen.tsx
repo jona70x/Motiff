@@ -60,9 +60,7 @@ export function AddCourseScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Cancel"
         >
-          {({ pressed }) => (
-            <Text style={[styles.closeButton, pressed && styles.pressed]}>Cancel</Text>
-          )}
+          <Text style={styles.closeButton}>Cancel</Text>
         </Pressable>
         <Text style={styles.title}>New Course</Text>
         <View style={{ width: 50 }} />
@@ -121,6 +119,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bg,
+  },
+  safeArea: {
+    flex: 1,
   },
   safeArea: {
     flex: 1,
