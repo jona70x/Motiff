@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { usePomodoro, DEFAULT_DURATION_MS } from "../hooks/usePomodoro";
 import { createFocusSession } from "../lib/api/sessions";
@@ -176,16 +177,31 @@ export function FocusTimerScreen({ route, navigation }: Props) {
           {isPaused && <Text style={styles.pausedLabel}>PAUSED</Text>}
         </View>
 
-        {/* Pause = white pill / Resume = indigo pill */}
-        <Pressable
-          style={[styles.primaryButton, isPaused && styles.primaryButtonResume]}
-          onPress={handlePauseResume}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.primaryButtonText, isPaused && styles.primaryButtonTextResume]}>
-            {isPaused ? "Resume" : "Pause"}
-          </Text>
-        </Pressable>
+        {/* Pause = white pill / Resume = indigo gradient with depth shadow */}
+        {isPaused ? (
+          <Pressable
+            style={styles.resumeDepth}
+            onPress={handlePauseResume}
+            accessibilityRole="button"
+          >
+            <LinearGradient
+              colors={["#7a5cff", "#5b3df5"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.resumeGradient}
+            >
+              <Text style={styles.resumeText}>Resume</Text>
+            </LinearGradient>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={styles.primaryButton}
+            onPress={handlePauseResume}
+            accessibilityRole="button"
+          >
+            <Text style={styles.primaryButtonText}>Pause</Text>
+          </Pressable>
+        )}
 
         {isActive && (
           <Pressable
@@ -327,21 +343,32 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: C.darkText,
     borderRadius: R.full,
-    paddingHorizontal: 48,
-    paddingVertical: 16,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
     minWidth: 160,
     alignItems: "center",
-  },
-  primaryButtonResume: {
-    backgroundColor: C.indigo,   // indigo Resume button (S5-6)
   },
   primaryButtonText: {
     color: C.dark,
     fontSize: 17,
-    fontFamily: F.bold,
+    fontFamily: F.xbold,
   },
-  primaryButtonTextResume: {
+  resumeDepth: {
+    borderRadius: R.full,
+    backgroundColor: "#3a21c4",
+    minWidth: 160,
+  },
+  resumeGradient: {
+    borderRadius: R.full,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 3,
+  },
+  resumeText: {
     color: C.darkText,
+    fontSize: 17,
+    fontFamily: F.xbold,
   },
   doneEarlyButton: {
     marginTop: -16,
@@ -349,9 +376,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   doneEarlyText: {
-    color: C.darkMuted,
+    color: "#6b6690",
     fontSize: 14,
-    fontFamily: F.medium,
+    fontFamily: F.bold,
+    fontWeight: "700",
     textDecorationLine: "underline",
   },
   devFinishButton: {
@@ -380,7 +408,8 @@ const styles = StyleSheet.create({
   },
   breakTitle: {
     fontSize: 26,
-    fontFamily: F.bold,
+    fontFamily: F.display,
+    fontWeight: "800",
     color: C.darkText,
   },
   breakSub: {

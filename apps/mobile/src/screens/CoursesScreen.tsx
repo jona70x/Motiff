@@ -6,9 +6,6 @@
  *   • Mark as Completed / Reopen — toggles completed_at on the course row.
  *   • Delete — calls the delete-course Edge Function which removes storage
  *     objects then the DB row (cascade handles child rows).
- *
- * The Sign Out button is in the header to keep it accessible without burying
- * it in a settings screen.
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -78,10 +75,6 @@ export function CoursesScreen({ navigation }: Props) {
   }, [loadCourses]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
-
-  const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
-  }, []);
 
   /**
    * Toggles a course between active and completed.
@@ -232,13 +225,6 @@ export function CoursesScreen({ navigation }: Props) {
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Courses</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
       </View>
 
       <FlatList
@@ -298,17 +284,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: F.display,
     color: C.ink,
-  },
-  signOutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "#f0f0f5",
-    borderRadius: 6,
-  },
-  signOutText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111",
   },
   sectionHeader: {
     paddingHorizontal: 20,

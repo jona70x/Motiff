@@ -42,25 +42,25 @@ const SLIDES: Slide[] = [
     icon:     "📚",
     title:    "Welcome to Motiff",
     body:     "Your all-in-one academic companion — built for students who want to stay on top of their studies without the chaos.",
-    gradient: ["#EEF2FF", "#fbfaff"],
+    gradient: ["#fff2e6", "#ffe8d6"],
   },
   {
     icon:     "🗂️",
     title:    "Track every course",
     body:     "Add your courses and upload syllabi. Motiff extracts assignments and due dates automatically so nothing slips through.",
-    gradient: ["#E8FDF7", "#fbfaff"],
+    gradient: ["#f0eaff", "#e8dcff"],
   },
   {
     icon:     "⏱️",
     title:    "Focus, then recharge",
     body:     "A built-in Pomodoro timer keeps you in the zone. Set a daily study budget and watch your streaks grow.",
-    gradient: ["#FFFBEB", "#fbfaff"],
+    gradient: ["#fffbe6", "#fff4c2"],
   },
   {
     icon:     "🔔",
     title:    "Never miss a deadline",
     body:     "Enable notifications and Motiff will remind you about upcoming assignments — so you can focus on studying, not remembering.",
-    gradient: ["#FFF1F2", "#fbfaff"],
+    gradient: ["#e6fff5", "#ccf7e8"],
   },
 ] as const;
 
@@ -174,12 +174,20 @@ export function OnboardingScreen({ onComplete }: Props) {
 
       {/* Dot indicators */}
       <View style={styles.dots}>
-        {SLIDES.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i === activeIndex && styles.dotActive]}
-          />
-        ))}
+        {SLIDES.map((_, i) =>
+          i === activeIndex ? (
+            <View key={i} style={styles.dotActiveOuter}>
+              <LinearGradient
+                colors={["#5b3df5", "#ff7a59"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.dotActiveInner}
+              />
+            </View>
+          ) : (
+            <View key={i} style={styles.dot} />
+          )
+        )}
       </View>
 
       {/* Action area */}
@@ -187,13 +195,20 @@ export function OnboardingScreen({ onComplete }: Props) {
         {isLast ? (
           <>
             <Pressable
-              style={[styles.primaryButton, finishing && styles.buttonDisabled]}
+              style={[styles.ctaDepth, (finishing || notifRequested) && styles.buttonDisabled]}
               disabled={finishing || notifRequested}
               onPress={handleEnableNotifications}
               accessibilityRole="button"
               accessibilityLabel="Enable notifications and get started"
             >
-              <Text style={styles.primaryButtonText}>Enable notifications</Text>
+              <LinearGradient
+                colors={["#7a5cff", "#5b3df5"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.primaryButton}
+              >
+                <Text style={styles.primaryButtonText}>Enable notifications</Text>
+              </LinearGradient>
             </Pressable>
 
             <Pressable
@@ -209,12 +224,19 @@ export function OnboardingScreen({ onComplete }: Props) {
           </>
         ) : (
           <Pressable
-            style={styles.primaryButton}
+            style={[styles.ctaDepth, finishing && styles.buttonDisabled]}
             onPress={handleNext}
             accessibilityRole="button"
             accessibilityLabel="Next slide"
           >
-            <Text style={styles.primaryButtonText}>Next</Text>
+            <LinearGradient
+              colors={["#7a5cff", "#5b3df5"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryButton}
+            >
+              <Text style={styles.primaryButtonText}>Next</Text>
+            </LinearGradient>
           </Pressable>
         )}
       </View>
@@ -257,11 +279,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 27,
+    fontSize: 26,
     fontFamily: F.display,
-    color: C.text,
+    fontWeight: "800",
+    color: C.ink,
     textAlign: "center",
-    lineHeight: 34,
+    lineHeight: 33,
+    letterSpacing: -0.5,
   },
   body: {
     fontSize: 16,
@@ -279,23 +303,32 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: R.full,
-    backgroundColor: C.border,
+    borderRadius: 4,
+    backgroundColor: "#d6d4e8",
   },
-  dotActive: {
-    backgroundColor: C.indigo,
+  dotActiveOuter: {
     width: 22,
+    height: 8,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  dotActiveInner: {
+    flex: 1,
   },
   actions: {
     paddingHorizontal: 24,
     paddingBottom: 16,
     gap: 12,
   },
+  ctaDepth: {
+    borderRadius: R.lg,
+    backgroundColor: "#3a21c4",
+  },
   primaryButton: {
-    backgroundColor: C.indigo,
-    borderRadius: R.full,
-    paddingVertical: 15,
+    borderRadius: R.lg,
+    paddingVertical: 16,
     alignItems: "center",
+    marginBottom: 4,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -303,7 +336,8 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: C.textInverse,
     fontSize: 16,
-    fontFamily: F.bold,
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   secondaryButton: {
     alignItems: "center",
