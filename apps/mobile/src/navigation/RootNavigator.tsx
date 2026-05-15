@@ -86,7 +86,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         {recoveryMode ? (
           /*
            * Password recovery mode: the user arrived via a reset-email deep link.

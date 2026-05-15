@@ -31,6 +31,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { MIN_PASSWORD_LENGTH, validatePasswordReset } from "../lib/authHelpers";
+import { C, F, R } from "../theme";
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -186,7 +187,7 @@ export function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   flex: {
     flex: 1,
@@ -201,41 +202,47 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.display,
+    fontWeight: "800",
+    color: C.ink,
     marginBottom: 4,
   },
   description: {
     fontSize: 15,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
     lineHeight: 22,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: F.body,
+    color: C.text,
   },
   hint: {
     fontSize: 12,
-    color: "#999",
+    fontFamily: F.body,
+    color: C.textMuted,
     marginTop: -4,
   },
   errorBanner: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
+    backgroundColor: C.errorBg,
+    borderRadius: R.md,
     padding: 12,
   },
   errorText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 13,
+    fontFamily: F.medium,
   },
   primaryButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
+    backgroundColor: "#1a1633",
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 4,
@@ -244,9 +251,10 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   cancelButton: {
     alignItems: "center",
@@ -254,6 +262,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    color: "#888",
+    fontFamily: F.medium,
+    color: C.textMuted,
   },
 });

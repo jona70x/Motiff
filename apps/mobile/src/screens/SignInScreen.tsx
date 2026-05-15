@@ -5,19 +5,6 @@
  * Open sign-ups are disabled in Supabase Auth (Auth → Settings →
  * "Allow new users to sign up" = off). New users are admitted via
  * Supabase invite emails sent from the dashboard or admin API.
- *
- * Invite flow:
- *   1. Admin calls supabase.auth.admin.inviteUserByEmail(email, {
- *        redirectTo: "motiff://auth/callback"
- *      })
- *   2. Tester receives a one-time magic link via email.
- *   3. Tapping the link opens the app via the deep-link handler in auth.ts,
- *      which calls supabase.auth.setSession() and signs the user in.
- *   4. On first sign-in the user sees the onboarding carousel.
- *
- * Because sign-up is invite-only, this screen only handles sign-in.
- * The mode toggle ("Create an account") is replaced by a "Closed beta"
- * banner that explains the invite process clearly.
  */
 
 import { useState } from "react";
@@ -31,17 +18,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
-import { C, F, R, shadow } from "../theme";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "SignIn">;
 
-/**
- * Sign-in form. Sign-up is disabled — new accounts require an invite email
- * from the Motiff team. Supabase will reject open sign-up attempts at the
- * API level; this screen reflects that by removing the sign-up path entirely.
- */
 export function SignInScreen({ navigation }: Props) {
   const [email, setEmail]           = useState("");
   const [password, setPassword]     = useState("");
@@ -67,61 +50,81 @@ export function SignInScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Motiff</Text>
+      {/* Full-bleed gradient background */}
+      <LinearGradient
+        colors={[C.bg, "#fff2e6"]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+
+      <View style={styles.content}>
+        <Text style={styles.wordmark}>Motiff</Text>
         <Text style={styles.subtitle}>Sign in to continue</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          autoComplete="email"
-          autoCorrect={false}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          editable={!submitting}
-          returnKeyType="next"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          autoCapitalize="none"
-          autoComplete="password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          editable={!submitting}
-          returnKeyType="done"
-          onSubmitEditing={onSubmit}
-        />
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={C.textMuted}
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!submitting}
+            returnKeyType="next"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={C.textMuted}
+            autoCapitalize="none"
+            autoComplete="password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!submitting}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
+          />
 
           {error !== null && <Text style={styles.error}>{error}</Text>}
 
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.primaryButton, disabled && styles.buttonDisabled]}
-          disabled={disabled}
-          onPress={onSubmit}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          )}
-        </Pressable>
+          {/* Deep-indigo sign-in button with depth shadow */}
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.signInDepth, disabled && styles.buttonDisabled]}
+            disabled={disabled}
+            onPress={onSubmit}
+          >
+            <View style={styles.signInButton}>
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.signInText}>Sign in</Text>
+              )}
+            </View>
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => navigation.navigate("ForgotPassword")}
-          style={styles.forgotButton}
-        >
-          <Text style={styles.forgotText}>Forgot password?</Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("ForgotPassword")}
+            style={styles.forgotButton}
+          >
+            {({ pressed }) => (
+              <Text style={[styles.forgotText, pressed && styles.forgotTextUnderline]}>
+                Forgot password?
+              </Text>
+            )}
+          </Pressable>
+        </View>
 
-        {/* Closed-beta notice — replaces the open sign-up toggle */}
+        {/* Closed-beta notice */}
         <View style={styles.betaBanner}>
           <Text style={styles.betaTitle}>Closed beta</Text>
           <Text style={styles.betaBody}>
@@ -137,25 +140,28 @@ export function SignInScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: "center",
-    padding: 28,
     backgroundColor: C.bg,
   },
-  inner: {
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
     gap: 20,
   },
   wordmark: {
-    fontSize: 48,
-    fontFamily: F.display,     // Bricolage Grotesque Bold
-    color: C.text,
+    fontSize: 36,
+    fontFamily: F.display,
+    fontWeight: "800",
+    color: C.ink,
     textAlign: "center",
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
-  tagline: {
-    fontSize: 16,
-    fontFamily: F.medium,
+  subtitle: {
+    fontSize: 15,
+    fontFamily: F.body,
     color: C.textSub,
     textAlign: "center",
+    marginTop: -12,
   },
   form: {
     gap: 12,
@@ -164,67 +170,69 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: R.md,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 16,
     fontFamily: F.body,
     color: C.text,
-    ...shadow.card,
   },
   error: {
     color: C.error,
     fontSize: 14,
     fontFamily: F.medium,
   },
-  heroButton: {
-    backgroundColor: C.lemon,
-    borderRadius: R.full,
+  signInDepth: {
+    borderRadius: R.lg,
+    backgroundColor: "#0a081a",
+    marginTop: 4,
+  },
+  signInButton: {
+    borderRadius: R.lg,
+    backgroundColor: "#1a1633",
     paddingVertical: 16,
     alignItems: "center",
-    marginTop: 4,
-    ...shadow.float,
+    marginBottom: 4,
+  },
+  signInText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   buttonDisabled: {
-    backgroundColor: C.border,
-    opacity: 1,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  heroButtonText: {
-    color: C.lemonText,
-    fontSize: 17,
-    fontFamily: F.bold,
-  },
-  heroButtonTextDisabled: {
-    color: C.textMuted,
+    opacity: 0.5,
   },
   forgotButton: {
     alignItems: "center",
     paddingVertical: 6,
   },
   forgotText: {
-    color: C.indigo,
+    color: "#5b3df5",
     fontSize: 14,
-    fontFamily: F.medium,
+    fontFamily: F.bold,
+    fontWeight: "700",
+  },
+  forgotTextUnderline: {
+    textDecorationLine: "underline",
   },
   betaBanner: {
     backgroundColor: "#f0f4ff",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#c8d4f5",
     padding: 14,
-    marginTop: 4,
     gap: 4,
   },
   betaTitle: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#3355cc",
+    fontFamily: F.bold,
+    color: "#5b3df5",
   },
   betaBody: {
     fontSize: 13,
-    color: "#555",
+    fontFamily: F.body,
+    color: C.textSub,
     lineHeight: 18,
   },
 });
