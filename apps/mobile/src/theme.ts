@@ -79,12 +79,14 @@ export const C = {
   pillLaterDot:       "#7a5cff",
 
   // ── Status ───────────────────────────────────────────────────────────────────
-  error:     "#DC2626",
-  errorBg:   "#FEF2F2",
-  warning:   "#D97706",
-  warningBg: "#FFFBEB",
-  success:   "#059669",
-  successBg: "#ECFDF5",
+  error:         "#DC2626",
+  errorBg:       "#FEF2F2",
+  errorBorder:   "#FECACA",   // light red border (danger card outline)
+  warning:       "#D97706",
+  warningBg:     "#FFFBEB",
+  warningBorder: "#FDE68A",   // warm yellow border (warning banner bottom line)
+  success:       "#059669",
+  successBg:     "#ECFDF5",
 
   // ── Dark (FocusTimer) ────────────────────────────────────────────────────────
   dark:       "#0a0a0a",
@@ -171,6 +173,13 @@ export const G = {
   progFill:     ["#5b3df5", "#ff7a59"] as [string, string],
   lemonFab:     ["#ffe27a", "#ffd447"] as [string, string],
 } as const;
+
+/**
+ * Standard press-state opacity for Pressable components.
+ * Use as: style={({ pressed }) => [styles.foo, pressed && styles.pressed]}
+ * where styles.pressed = { opacity: PRESS_OPACITY }
+ */
+export const PRESS_OPACITY = 0.7;
 
 /** Font family names loaded by App.tsx via expo-google-fonts. */
 export const F = {

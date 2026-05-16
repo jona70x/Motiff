@@ -21,6 +21,8 @@ import {
 } from "../lib/api/assignments";
 import { getCourses } from "../lib/api/courses";
 import { assignmentInsertSchema, type Course } from "../lib/schema";
+import { Icons } from "../lib/icons";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "AddAssignment">;
 
@@ -144,7 +146,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
     return (
       <SafeAreaView style={styles.root} edges={["top"]}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={C.indigo} />
         </View>
       </SafeAreaView>
     );
@@ -157,10 +159,12 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-            <Text style={styles.closeButton}>Cancel</Text>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
+            {({ pressed }) => (
+              <Text style={[styles.closeButton, pressed && styles.pressed]}>Cancel</Text>
+            )}
           </Pressable>
-          <Text style={styles.title}>{isEdit ? "Edit Assignment" : "New Assignment"}</Text>
+          <Text style={styles.headerTitle}>{isEdit ? "Edit Assignment" : "New Assignment"}</Text>
           <View style={{ width: 50 }} />
         </View>
 
@@ -170,7 +174,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <View style={styles.field}>
               <Text style={styles.label}>Course</Text>
               {coursesLoading ? (
-                <ActivityIndicator style={{ alignSelf: "flex-start" }} />
+                <ActivityIndicator style={{ alignSelf: "flex-start" }} color={C.indigo} />
               ) : courses.length === 0 ? (
                 <Text style={styles.emptyCoursesText}>
                   No active courses yet. Add a course first.
@@ -182,7 +186,11 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
                     return (
                       <Pressable
                         key={c.id}
-                        style={[styles.courseRow, selected && styles.courseRowSelected]}
+                        style={({ pressed }) => [
+                          styles.courseRow,
+                          selected && styles.courseRowSelected,
+                          pressed && styles.pressed,
+                        ]}
                         onPress={() => setCourseId(c.id)}
                         accessibilityRole="radio"
                         accessibilityState={{ selected }}
@@ -197,7 +205,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
                         </View>
                         {selected && (
                           <View style={styles.courseCheck}>
-                            <Text style={styles.courseCheckText}>✓</Text>
+                            <Icons.check size={14} color={C.textInverse} />
                           </View>
                         )}
                       </Pressable>
@@ -213,6 +221,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="e.g., Chapter 5 Homework"
+              placeholderTextColor={C.textMuted}
               value={title}
               onChangeText={setTitle}
               editable={!loading}
@@ -229,14 +238,16 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
                   onPress={() => { setDueAt(null); setShowDatePicker(false); }}
                   hitSlop={8}
                 >
-                  <Text style={styles.clearLink}>Clear</Text>
+                  {({ pressed }) => (
+                    <Text style={[styles.clearLink, pressed && styles.pressed]}>Clear</Text>
+                  )}
                 </Pressable>
               )}
             </View>
             {Platform.OS === "ios" ? (
               <>
                 <Pressable
-                  style={styles.setDateButton}
+                  style={({ pressed }) => [styles.setDateButton, pressed && styles.pressed]}
                   onPress={() => setShowDatePicker((v) => !v)}
                   accessibilityRole="button"
                 >
@@ -296,6 +307,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="e.g., homework, quiz, project"
+              placeholderTextColor={C.textMuted}
               value={kind}
               onChangeText={setKind}
               editable={!loading}
@@ -309,6 +321,7 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="e.g., 60"
+              placeholderTextColor={C.textMuted}
               value={estMinutes}
               onChangeText={(v) => setEstMinutes(v.replace(/[^0-9]/g, ""))}
               editable={!loading}
@@ -324,9 +337,10 @@ export function AddAssignmentScreen({ route, navigation }: Props) {
             style={[styles.submitButton, disabled && styles.buttonDisabled]}
             disabled={disabled}
             onPress={handleSubmit}
+            accessibilityRole="button"
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={C.textInverse} />
             ) : (
               <Text style={styles.submitText}>
                 {isEdit ? "Save changes" : "Create Assignment"}
@@ -348,7 +362,7 @@ function defaultDueDate(): Date {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -361,19 +375,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   closeButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
-  title: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   form: {
     padding: 20,
@@ -385,8 +402,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   dueRow: {
     flexDirection: "row",
@@ -395,43 +412,46 @@ const styles = StyleSheet.create({
   },
   clearLink: {
     fontSize: 13,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
   setDateButton: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: R.md,
     paddingHorizontal: 12,
     paddingVertical: 12,
     alignItems: "flex-start",
   },
   setDateButtonText: {
     fontSize: 15,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
   androidDueRow: {
     flexDirection: "row",
     gap: 8,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: F.body,
+    color: C.text,
   },
   error: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   submitButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
+    backgroundColor: C.ink,
+    borderRadius: R.lg,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
@@ -440,13 +460,15 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   emptyCoursesText: {
     fontSize: 14,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.textMuted,
     fontStyle: "italic",
   },
   courseList: {
@@ -455,16 +477,16 @@ const styles = StyleSheet.create({
   courseRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: R.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   courseRowSelected: {
-    borderColor: "#3355cc",
-    backgroundColor: "#f0f4ff",
+    borderColor: C.indigo,
+    backgroundColor: C.indigoLight,
   },
   courseRowInner: {
     flex: 1,
@@ -472,27 +494,23 @@ const styles = StyleSheet.create({
   },
   courseRowTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   courseRowTitleSelected: {
-    color: "#3355cc",
+    color: C.indigo,
   },
   courseRowTerm: {
     fontSize: 12,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.textMuted,
   },
   courseCheck: {
     width: 22,
     height: 22,
-    borderRadius: 11,
-    backgroundColor: "#3355cc",
+    borderRadius: R.full,
+    backgroundColor: C.indigo,
     alignItems: "center",
     justifyContent: "center",
-  },
-  courseCheckText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
   },
 });

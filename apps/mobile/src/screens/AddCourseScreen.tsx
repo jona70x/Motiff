@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createCourse } from "../lib/api/courses";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "AddCourse">;
 
@@ -71,6 +72,7 @@ export function AddCourseScreen({ navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder="e.g., Math 101"
+            placeholderTextColor={C.textMuted}
             value={title}
             onChangeText={setTitle}
             editable={!loading}
@@ -84,6 +86,7 @@ export function AddCourseScreen({ navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder="e.g., Fall 2025"
+            placeholderTextColor={C.textMuted}
             value={term}
             onChangeText={setTerm}
             editable={!loading}
@@ -98,9 +101,10 @@ export function AddCourseScreen({ navigation }: Props) {
           style={[styles.submitButton, disabled && styles.buttonDisabled]}
           disabled={disabled}
           onPress={handleSubmit}
+          accessibilityRole="button"
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={C.textInverse} />
           ) : (
             <Text style={styles.submitText}>Create Course</Text>
           )}
@@ -114,7 +118,10 @@ export function AddCourseScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
+  },
+  safeArea: {
+    flex: 1,
   },
   safeArea: {
     flex: 1,
@@ -125,19 +132,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   closeButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   title: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   form: {
     padding: 20,
@@ -148,25 +158,28 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: F.body,
+    color: C.text,
   },
   error: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   submitButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
+    backgroundColor: C.ink,
+    borderRadius: R.lg,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
@@ -175,8 +188,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.display,
+    fontWeight: "800",
   },
 });

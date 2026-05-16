@@ -23,13 +23,14 @@ import {
 } from "../lib/api/extraction";
 import type { SyllabusCandidate } from "../lib/schema";
 import { analytics } from "../lib/analytics";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "SyllabusCandidates">;
 
 const BAND_COLOR: Record<SyllabusCandidate["confidence_band"], string> = {
-  high:   "#1a8a3a",
-  medium: "#b86e00",
-  low:    "#b00020",
+  high:   C.success,
+  medium: C.warning,
+  low:    C.error,
 };
 
 const BAND_LABEL: Record<SyllabusCandidate["confidence_band"], string> = {
@@ -101,6 +102,7 @@ function CandidateCard({
             value={editState.title}
             onChangeText={(v) => onEditChange({ title: v })}
             placeholder="Assignment title"
+            placeholderTextColor={C.textMuted}
             maxLength={500}
           />
           <Text style={styles.fieldLabel}>Kind (optional)</Text>
@@ -109,6 +111,7 @@ function CandidateCard({
             value={editState.kind}
             onChangeText={(v) => onEditChange({ kind: v })}
             placeholder="e.g. exam, homework"
+            placeholderTextColor={C.textMuted}
             maxLength={100}
           />
           <Text style={styles.fieldLabel}>Due date</Text>
@@ -124,7 +127,7 @@ function CandidateCard({
               ) : (
                 <>
                   <Pressable
-                    style={styles.dateBtn}
+                    style={({ pressed }) => [styles.dateBtn, pressed && styles.pressed]}
                     onPress={() => onEditChange({ showDatePicker: true })}
                   >
                     <Text style={styles.dateBtnText}>
@@ -132,7 +135,7 @@ function CandidateCard({
                     </Text>
                   </Pressable>
                   <Pressable
-                    style={styles.dateBtn}
+                    style={({ pressed }) => [styles.dateBtn, pressed && styles.pressed]}
                     onPress={() => onEditChange({ showTimePicker: true })}
                   >
                     <Text style={styles.dateBtnText}>
@@ -164,12 +167,14 @@ function CandidateCard({
                 </>
               )}
               <Pressable onPress={() => onEditChange({ dueAt: null })}>
-                <Text style={styles.clearDate}>Clear date</Text>
+                {({ pressed }) => (
+                  <Text style={[styles.clearDate, pressed && styles.pressed]}>Clear date</Text>
+                )}
               </Pressable>
             </>
           ) : (
             <Pressable
-              style={styles.dateBtn}
+              style={({ pressed }) => [styles.dateBtn, pressed && styles.pressed]}
               onPress={() => onEditChange({ dueAt: new Date() })}
             >
               <Text style={styles.dateBtnText}>Set a due date</Text>
@@ -177,10 +182,21 @@ function CandidateCard({
           )}
 
           <View style={styles.editActions}>
-            <Pressable style={styles.saveBtn} onPress={onSaveEdit} disabled={!editState.title.trim()}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveBtn,
+                !editState.title.trim() && styles.btnDisabled,
+                pressed && styles.pressed,
+              ]}
+              onPress={onSaveEdit}
+              disabled={!editState.title.trim()}
+            >
               <Text style={styles.saveBtnText}>Save & Confirm</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={onCancelEdit}>
+            <Pressable
+              style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed]}
+              onPress={onCancelEdit}
+            >
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </View>
@@ -198,16 +214,25 @@ function CandidateCard({
               {c.status === "rejected" ? "Rejected" : "Added to assignments"}
             </Text>
           ) : busy ? (
-            <ActivityIndicator size="small" color="#3355cc" style={styles.spinner} />
+            <ActivityIndicator size="small" color={C.indigo} style={styles.spinner} />
           ) : (
             <View style={styles.actions}>
-              <Pressable style={styles.confirmBtn} onPress={onConfirm}>
+              <Pressable
+                style={({ pressed }) => [styles.confirmBtn, pressed && styles.pressed]}
+                onPress={onConfirm}
+              >
                 <Text style={styles.confirmBtnText}>Confirm</Text>
               </Pressable>
-              <Pressable style={styles.editBtn} onPress={onStartEdit}>
+              <Pressable
+                style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}
+                onPress={onStartEdit}
+              >
                 <Text style={styles.editBtnText}>Edit</Text>
               </Pressable>
-              <Pressable style={styles.rejectBtn} onPress={onReject}>
+              <Pressable
+                style={({ pressed }) => [styles.rejectBtn, pressed && styles.pressed]}
+                onPress={onReject}
+              >
                 <Text style={styles.rejectBtnText}>Reject</Text>
               </Pressable>
             </View>
@@ -379,7 +404,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.indigo} />
       </View>
     );
   }
@@ -387,8 +412,10 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.backButton}>← Back</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
+          {({ pressed }) => (
+            <Text style={[styles.backButton, pressed && styles.pressed]}>← Back</Text>
+          )}
         </Pressable>
         <Text style={styles.headerTitle}>Review Candidates</Text>
         <View style={{ width: 60 }} />
@@ -406,12 +433,16 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
             </Text>
             {pendingHighCount > 0 && (
               <Pressable
-                style={[styles.bulkBtn, bulkBusy && styles.bulkBtnDisabled]}
+                style={({ pressed }) => [
+                  styles.bulkBtn,
+                  bulkBusy && styles.bulkBtnDisabled,
+                  pressed && styles.pressed,
+                ]}
                 onPress={handleBulkConfirm}
                 disabled={bulkBusy}
               >
                 {bulkBusy ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={C.textInverse} />
                 ) : (
                   <Text style={styles.bulkBtnText}>
                     Confirm {pendingHighCount} high-confidence
@@ -451,7 +482,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   center: {
     flex: 1,
@@ -464,20 +495,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   backButton: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
     width: 60,
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   listHeader: {
     paddingHorizontal: 16,
@@ -487,22 +521,26 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
-    color: "#666",
+    fontFamily: F.body,
+    color: C.textSub,
   },
   bulkBtn: {
-    backgroundColor: "#1a8a3a",
-    borderRadius: 8,
+    backgroundColor: C.success,
+    borderRadius: R.md,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignItems: "center",
   },
   bulkBtnDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   bulkBtnText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
+  },
+  btnDisabled: {
+    opacity: 0.5,
   },
   list: {
     paddingBottom: 32,
@@ -510,11 +548,11 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginVertical: 6,
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#e0e0e6",
+    borderColor: C.border,
     gap: 6,
   },
   cardDone: {
@@ -522,26 +560,27 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: "flex-start",
-    borderRadius: 4,
+    borderRadius: R.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   cardTitleDone: {
-    color: "#555",
+    color: C.textSub,
   },
   cardMeta: {
     fontSize: 13,
-    color: "#666",
+    fontFamily: F.body,
+    color: C.textSub,
   },
   actions: {
     flexDirection: "row",
@@ -550,44 +589,44 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     flex: 1,
-    backgroundColor: "#1a8a3a",
-    borderRadius: 6,
+    backgroundColor: C.success,
+    borderRadius: R.sm,
     paddingVertical: 7,
     alignItems: "center",
   },
   confirmBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   editBtn: {
     flex: 1,
-    backgroundColor: "#3355cc",
-    borderRadius: 6,
+    backgroundColor: C.indigo,
+    borderRadius: R.sm,
     paddingVertical: 7,
     alignItems: "center",
   },
   editBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   rejectBtn: {
     flex: 1,
-    backgroundColor: "#f0f0f5",
-    borderRadius: 6,
+    backgroundColor: C.borderLight,
+    borderRadius: R.sm,
     paddingVertical: 7,
     alignItems: "center",
   },
   rejectBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
   },
   statusLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#888",
+    fontFamily: F.bold,
+    color: C.textMuted,
     marginTop: 4,
   },
   spinner: {
@@ -598,35 +637,38 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
     marginTop: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d0d0d8",
-    borderRadius: 6,
+    borderColor: C.border,
+    borderRadius: R.sm,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 14,
-    color: "#111",
-    backgroundColor: "#fafafa",
+    fontFamily: F.body,
+    color: C.text,
+    backgroundColor: C.bg,
   },
   dateBtn: {
     borderWidth: 1,
-    borderColor: "#d0d0d8",
-    borderRadius: 6,
+    borderColor: C.border,
+    borderRadius: R.sm,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    backgroundColor: "#fafafa",
+    backgroundColor: C.bg,
   },
   dateBtnText: {
     fontSize: 14,
-    color: "#3355cc",
+    fontFamily: F.medium,
+    color: C.indigo,
   },
   clearDate: {
     fontSize: 12,
-    color: "#888",
+    fontFamily: F.body,
+    color: C.textMuted,
     marginTop: 2,
   },
   editActions: {
@@ -636,27 +678,27 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     flex: 2,
-    backgroundColor: "#1a8a3a",
-    borderRadius: 6,
+    backgroundColor: C.success,
+    borderRadius: R.sm,
     paddingVertical: 9,
     alignItems: "center",
   },
   saveBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
+    fontFamily: F.bold,
+    color: C.textInverse,
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: "#f0f0f5",
-    borderRadius: 6,
+    backgroundColor: C.borderLight,
+    borderRadius: R.sm,
     paddingVertical: 9,
     alignItems: "center",
   },
   cancelBtnText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
   },
   emptyState: {
     alignItems: "center",
@@ -666,12 +708,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
   },
   emptySubtext: {
     fontSize: 13,
-    color: "#999",
+    fontFamily: F.body,
+    color: C.textMuted,
     textAlign: "center",
   },
 });

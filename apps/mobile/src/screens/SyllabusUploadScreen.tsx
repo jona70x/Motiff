@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { pickPdf, uploadSyllabus } from "../lib/api/uploads";
 import { analytics } from "../lib/analytics";
+import { C, F, R } from "../theme";
 
 type Props = NativeStackScreenProps<any, "SyllabusUpload">;
 
@@ -65,8 +66,10 @@ export function SyllabusUploadScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.cancelText}>Cancel</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button">
+          {({ pressed }) => (
+            <Text style={[styles.cancelText, pressed && styles.pressed]}>Cancel</Text>
+          )}
         </Pressable>
         <Text style={styles.title}>Upload syllabus</Text>
         <View style={{ width: 60 }} />
@@ -103,14 +106,18 @@ export function SyllabusUploadScreen({ route, navigation }: Props) {
         )}
 
         <Pressable
-          style={[styles.pickButton, uploading && styles.pickButtonDisabled]}
+          style={({ pressed }) => [
+            styles.pickButton,
+            uploading && styles.pickButtonDisabled,
+            pressed && !uploading && styles.pressed,
+          ]}
           onPress={handlePick}
           disabled={uploading}
           accessibilityRole="button"
         >
           {uploading ? (
             <View style={styles.uploadingRow}>
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={C.textInverse} />
               <Text style={styles.pickButtonText}>Uploading…</Text>
             </View>
           ) : (
@@ -125,7 +132,7 @@ export function SyllabusUploadScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#f6f6f8",
+    backgroundColor: C.bg,
   },
   header: {
     flexDirection: "row",
@@ -133,19 +140,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e6",
+    borderBottomColor: C.border,
   },
   cancelText: {
     fontSize: 16,
-    color: "#3355cc",
-    fontWeight: "500",
+    fontFamily: F.medium,
+    color: C.indigo,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   title: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: F.bold,
+    color: C.text,
   },
   body: {
     padding: 24,
@@ -153,14 +163,15 @@ const styles = StyleSheet.create({
   },
   courseLabel: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: F.bold,
+    color: C.textSub,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   instructions: {
     fontSize: 15,
-    color: "#333",
+    fontFamily: F.body,
+    color: C.text,
     lineHeight: 22,
   },
   constraintList: {
@@ -168,13 +179,14 @@ const styles = StyleSheet.create({
   },
   constraint: {
     fontSize: 14,
-    color: "#666",
+    fontFamily: F.body,
+    color: C.textSub,
   },
   selectedFile: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
     borderWidth: 1,
-    borderColor: "#d6d6dc",
+    borderColor: C.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: "row",
@@ -185,36 +197,39 @@ const styles = StyleSheet.create({
   selectedFileName: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "500",
-    color: "#111",
+    fontFamily: F.medium,
+    color: C.text,
   },
   selectedFileSize: {
     fontSize: 13,
-    color: "#777",
+    fontFamily: F.body,
+    color: C.textMuted,
   },
   errorBox: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
+    backgroundColor: C.errorBg,
+    borderRadius: R.md,
     padding: 12,
   },
   errorText: {
-    color: "#b00020",
+    color: C.error,
     fontSize: 14,
+    fontFamily: F.medium,
   },
   pickButton: {
-    backgroundColor: "#111",
-    borderRadius: 10,
+    backgroundColor: C.ink,
+    borderRadius: R.lg,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 8,
   },
   pickButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   pickButtonText: {
-    color: "#fff",
+    color: C.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: F.display,
+    fontWeight: "800",
   },
   uploadingRow: {
     flexDirection: "row",

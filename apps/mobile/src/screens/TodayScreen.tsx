@@ -381,6 +381,22 @@ const styles = StyleSheet.create({
     fontFamily: F.bold,
     color: C.textInverse,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  streakBadge: {
+    backgroundColor: C.ink,
+    borderRadius: R.full,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  streakText: {
+    fontSize: 13,
+    fontFamily: F.bold,
+    color: C.lemon,
+  },
   scrollContent: {
     paddingVertical: 12,
   },

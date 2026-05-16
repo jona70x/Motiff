@@ -4,20 +4,18 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "internal": {
+      "ios": {
+        "resourceClass": "m-medium",
+        "distribution": "internal",
+        "autoIncrement": false
+      }
+    },
     "production": {
       "ios": {
         "resourceClass": "m-medium",
         "distribution": "store",
         "autoIncrement": true
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "jonathan.carpioarellano@sjsu.edu",
-        "ascAppId": "",
-        "appleTeamId": ""
       }
     }
   }
