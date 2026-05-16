@@ -30,7 +30,8 @@ function formatMmSs(ms: number): string {
 export function FocusTimerScreen({ route, navigation }: Props) {
   const params = (route.params as any) || {};
   const assignmentId: string | null = params.assignmentId || null;
-  const title: string = params.title ?? "Focus session";
+  const isFreeMode = assignmentId === null;
+  const title: string = params.title ?? (isFreeMode ? "Free focus" : "Focus session");
   const initialDurationMs: number = params.durationMs ?? DEFAULT_DURATION_MS;
 
   const { phase, remainingMs, elapsedMs, startedAt, start, pause, resume, cancel, finish } =
@@ -99,6 +100,14 @@ export function FocusTimerScreen({ route, navigation }: Props) {
     if (phase === "running") pause();
     else if (phase === "paused") resume();
   }, [phase, pause, resume]);
+
+  const handleEndSession = useCallback(() => {
+    cancel();
+    const dur = elapsedMs;
+    writeSession("cancelled", dur);
+    analytics.focusCancelled({ assignmentId, durationS: Math.round(dur / 1000) });
+    navigation.goBack();
+  }, [cancel, elapsedMs, writeSession, assignmentId, navigation]);
 
   const handleDoneWithThis = useCallback(async () => {
     wasAlreadyPaused.current = phase === "paused";
@@ -204,13 +213,23 @@ export function FocusTimerScreen({ route, navigation }: Props) {
         )}
 
         {isActive && (
-          <Pressable
-            style={styles.doneEarlyButton}
-            onPress={handleDoneWithThis}
-            accessibilityRole="button"
-          >
-            <Text style={styles.doneEarlyText}>Done with this assignment</Text>
-          </Pressable>
+          isFreeMode ? (
+            <Pressable
+              style={styles.doneEarlyButton}
+              onPress={handleEndSession}
+              accessibilityRole="button"
+            >
+              <Text style={styles.doneEarlyText}>End session</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.doneEarlyButton}
+              onPress={handleDoneWithThis}
+              accessibilityRole="button"
+            >
+              <Text style={styles.doneEarlyText}>Done with this assignment</Text>
+            </Pressable>
+          )
         )}
 
         {__DEV__ && (

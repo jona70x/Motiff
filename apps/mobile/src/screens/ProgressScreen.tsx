@@ -73,6 +73,14 @@ export function ProgressScreen({ navigation }: Props) {
     <SafeAreaView style={styles.root} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Progress</Text>
+        <Pressable
+          style={({ pressed }) => [styles.freeFocusBtn, pressed && styles.freeFocusBtnPressed]}
+          onPress={() => navigation.navigate("FocusTimer")}
+          accessibilityRole="button"
+          accessibilityLabel="Start free focus session"
+        >
+          <Text style={styles.freeFocusBtnText}>Free Focus</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -151,6 +159,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: C.surface,
@@ -161,6 +172,20 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: F.display,
     color: C.ink,
+  },
+  freeFocusBtn: {
+    backgroundColor: C.ink,
+    borderRadius: R.full,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  freeFocusBtnPressed: {
+    opacity: 0.7,
+  },
+  freeFocusBtnText: {
+    color: C.textInverse,
+    fontSize: 13,
+    fontFamily: F.bold,
   },
   scrollContent: {
     padding: 16,
