@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Motiff — Mobile UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%;background:#ececf0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+  body{display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:360px}
+  .nav button{font:inherit;cursor:pointer;border:1px solid #d6d6dc;background:#fff;color:#111;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600}
+  .nav button.on{background:#111;color:#fff;border-color:#111}
+  .hint{font-size:11px;color:#888;max-width:360px;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" data-presets="react">
+    const { useState } = React;
+
+    function App() {
+      const [state, setState] = useState({ auth: false, onboarded: false, tab: 'Today', focus: null });
+
+      const navigate = (route, payload) => {
+        if (route === 'focus') setState(s => ({ ...s, focus: payload }));
+        if (route === 'addCourse') alert('(modal) Add Course');
+        if (route === 'courseDetail') alert('(push) Course: ' + payload.title);
+      };
+
+      let inner;
+      if (!state.auth) inner = <SignInScreen onSignIn={() => setState(s=>({...s, auth:true}))} />;
+      else if (!state.onboarded) inner = <OnboardingScreen onDone={() => setState(s=>({...s, onboarded:true}))} />;
+      else if (state.focus) inner = <FocusTimerScreen assignment={state.focus} onBack={() => setState(s=>({...s, focus:null}))} />;
+      else {
+        const tab = state.tab;
+        const Body =
+          tab === 'Today'    ? <TodayScreen    navigate={navigate} /> :
+          tab === 'Plan'     ? <PlanScreen     navigate={navigate} /> :
+          tab === 'Courses'  ? <CoursesScreen  navigate={navigate} /> :
+          tab === 'Progress' ? <ProgressScreen /> : null;
+        inner = (
+          <div style={{ height:'100%', display:'flex', flexDirection:'column' }}>
+            <div style={{ flex:1, minHeight:0 }}>{Body}</div>
+            <TabBar active={tab} onChange={(t)=>setState(s=>({...s, tab:t}))} />
+          </div>
+        );
+      }
+
+      const jumpTo = (setter) => () => setState(s => ({ ...s, ...setter }));
+
+      return (
+        <div className="wrap">
+          <IOSFrame model="iPhone 15 Pro" statusBar={{ time:'9:41' }}>{inner}</IOSFrame>
+          <div className="nav">
+            <button className={!state.auth?'on':''} onClick={jumpTo({ auth:false, onboarded:false, focus:null })}>Sign in</button>
+            <button className={state.auth && !state.onboarded?'on':''} onClick={jumpTo({ auth:true, onboarded:false, focus:null })}>Onboarding</button>
+            <button className={state.auth && state.onboarded && state.tab==='Today' && !state.focus?'on':''} onClick={jumpTo({ auth:true, onboarded:true, tab:'Today', focus:null })}>Today</button>
+            <button className={state.auth && state.onboarded && state.tab==='Plan' && !state.focus?'on':''} onClick={jumpTo({ auth:true, onboarded:true, tab:'Plan', focus:null })}>Plan</button>
+            <button className={state.auth && state.onboarded && state.tab==='Courses' && !state.focus?'on':''} onClick={jumpTo({ auth:true, onboarded:true, tab:'Courses', focus:null })}>Courses</button>
+            <button className={state.auth && state.onboarded && state.tab==='Progress' && !state.focus?'on':''} onClick={jumpTo({ auth:true, onboarded:true, tab:'Progress', focus:null })}>Progress</button>
+            <button className={state.focus?'on':''} onClick={() => setState(s=>({ ...s, auth:true, onboarded:true, focus:{ title:'Chapter 4 response paper' } }))}>Focus</button>
+          </div>
+          <div className="hint">Click-thru UI kit. Sign in → onboarding → tabs. Tap <b>Start Focus</b> on any assignment to enter the timer.</div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Plan block card</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{
+    padding:18px;
+    background: linear-gradient(135deg,#fbfaff 0%, #fff 60%, #fff2e6 100%);
+    font-family:"Nunito",sans-serif;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .card{
+    position:relative;background:#fff;border-radius:18px;
+    padding:14px 16px 14px 16px;
+    max-width:680px;margin:0 auto;width:100%;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:8px;
+    box-shadow: 0 1px 2px rgba(26,22,51,.06), 0 6px 18px rgba(91,61,245,.06), 0 0 0 1px rgba(91,61,245,.08);
+  }
+  .top{display:flex;align-items:center;gap:12px}
+  .pos{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    background: linear-gradient(180deg,#7a5cff,#5b3df5);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:16px;font-weight:800;letter-spacing:-.02em;
+    box-shadow: 0 3px 0 #3a21c4, 0 6px 14px rgba(91,61,245,.3);
+  }
+  .mr{flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .course{
+    font-size:11px;font-weight:800;color:#5b3df5;
+    text-transform:uppercase;letter-spacing:1.2px;
+  }
+  .time{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:12px;font-weight:800;color:#6b6690;
+    background:#efeaff;border-radius:999px;padding:4px 10px;
+  }
+  .time::before{content:"◷";color:#7a5cff}
+  .title{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:18px;font-weight:800;color:#1a1633;
+    line-height:1.2;letter-spacing:-0.015em;
+    margin-left:48px;
+  }
+  .bot{display:flex;justify-content:space-between;align-items:center;margin-left:48px;gap:8px}
+  .due{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:800;
+    border-radius:999px;padding:4px 10px;
+  }
+  .due .dot{width:7px;height:7px;border-radius:50%}
+  .due.today{background:#fff2e6;color:#c85418}
+  .due.today .dot{background:#ff7a59;box-shadow:0 0 0 3px rgba(255,122,89,.2)}
+  .due.week{background:#efeaff;color:#5b3df5}
+  .due.week .dot{background:#7a5cff;box-shadow:0 0 0 3px rgba(122,92,255,.2)}
+  .focus{
+    background:linear-gradient(180deg,#ff9578,#ff7a59);
+    color:#fff;border:0;border-radius:12px;padding:10px 16px;
+    font-family:"Nunito";font-size:13px;font-weight:800;letter-spacing:-0.005em;
+    cursor:pointer;
+    box-shadow: 0 3px 0 #d4512e, 0 6px 14px rgba(255,122,89,.35);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .focus::before{content:"▶";font-size:10px}
+
+  /* Plan header — "today's roadmap" feel */
+  .planhead{
+    max-width:680px;margin:0 auto;width:100%;box-sizing:border-box;
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:0 4px;
+  }
+  .planhead .h{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:22px;font-weight:800;letter-spacing:-.025em;color:#1a1633;
+  }
+  .planhead .sub{
+    font-size:12px;font-weight:700;color:#6b6690;
+  }
+  .planhead .sub b{color:#5b3df5}
+
+  /* Connector line between blocks — visual sequence */
+  .stack{
+    max-width:680px;margin:0 auto;width:100%;box-sizing:border-box;
+    position:relative;
+  }
+  .stack::before{
+    content:"";position:absolute;left:34px;top:30px;bottom:30px;width:2px;
+    background: repeating-linear-gradient(180deg,#c4c1dc 0,#c4c1dc 4px,transparent 4px,transparent 8px);
+    z-index:0;
+  }
+  .stack .card{position:relative;z-index:1;margin:0 0 10px}
+  .stack .card:last-child{margin-bottom:0}
+</style></head>
+<body>
+<div class="planhead">
+  <div class="h">Today's plan</div>
+  <div class="sub"><b>95 min</b> · 3 blocks</div>
+</div>
+<div class="stack">
+  <div class="card">
+    <div class="top">
+      <div class="pos">1</div>
+      <div class="mr"><span class="course">Linear Algebra</span><span class="time">45 min</span></div>
+    </div>
+    <div class="title">Problem set 7 — eigenvalues &amp; diagonalization</div>
+    <div class="bot">
+      <span class="due today"><span class="dot"></span>Due today · 2:00 PM</span>
+      <button class="focus">Start Focus</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="top">
+      <div class="pos">2</div>
+      <div class="mr"><span class="course">Intro to Psychology</span><span class="time">30 min</span></div>
+    </div>
+    <div class="title">Chapter 4 response paper</div>
+    <div class="bot">
+      <span class="due today"><span class="dot"></span>Due tonight</span>
+      <button class="focus">Start Focus</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="top">
+      <div class="pos">3</div>
+      <div class="mr"><span class="course">Modern Poetry</span><span class="time">20 min</span></div>
+    </div>
+    <div class="title">Final presentation outline</div>
+    <div class="bot">
+      <span class="due week"><span class="dot"></span>Due this week</span>
+      <button class="focus">Start Focus</button>
+    </div>
+  </div>
+</div>
+</body></html>

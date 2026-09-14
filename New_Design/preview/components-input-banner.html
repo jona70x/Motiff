@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Input &amp; banners</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{padding:20px;background:var(--bg-surface);font-family:var(--font-sans);display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;gap:10px;flex:1;min-width:280px}
+  input{font:inherit;background:#fff;border:1px solid #d6d6dc;border-radius:8px;padding:12px;font-size:16px;outline:none;width:100%;box-sizing:border-box}
+  input:focus{border-color:#111}
+  .beta{background:#f0f4ff;border:1px solid #c8d4f5;border-radius:8px;padding:14px}
+  .beta .t{font-size:13px;font-weight:600;color:#3355cc;margin-bottom:4px}
+  .beta .b{font-size:13px;color:#555;line-height:18px}
+  .err{background:#ffebee;border-radius:8px;padding:12px;color:#b00020;font-size:13px}
+  .warn{background:#fff8e1;border-bottom:1px solid #ffe082;padding:10px 16px;color:#795548;font-size:12px;border-radius:4px}
+</style></head>
+<body>
+  <div class="col">
+    <input placeholder="Email">
+    <input type="password" placeholder="Password" value="••••••••">
+  </div>
+  <div class="col">
+    <div class="beta"><div class="t">Closed beta</div><div class="b">Motiff is currently invite-only. Tap the link in your invite email to sign in.</div></div>
+    <div class="err">Failed to mark done. Please try again.</div>
+    <div class="warn">Plan generated but couldn't be saved — check your connection.</div>
+  </div>
+</body></html>

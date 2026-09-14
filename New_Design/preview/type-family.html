@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Type — family</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{
+    padding:24px;
+    background: linear-gradient(135deg, #fbfaff 0%, #fff2e6 100%);
+    color:var(--fg-1);
+    font-family:"Nunito",sans-serif;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .row{display:flex;gap:28px;align-items:flex-end}
+  .display{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-weight:800;font-size:72px;line-height:0.95;
+    letter-spacing:-0.035em;
+    font-variation-settings:"opsz" 96;
+    background:linear-gradient(92deg,#5b3df5,#ff7a59);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sans{
+    font-family:"Nunito",sans-serif;
+    font-weight:800;font-size:28px;color:var(--fg-1);letter-spacing:-0.01em;
+  }
+  .mono{
+    font-family:"JetBrains Mono",monospace;
+    font-size:24px;font-weight:500;color:var(--fg-2);letter-spacing:1px;
+    background:#1a1633;color:#ffd447;padding:4px 10px;border-radius:8px;
+  }
+  .meta{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;color:var(--fg-5);line-height:1.7;font-weight:500;
+  }
+  .pill{
+    display:inline-block;padding:3px 9px;border-radius:999px;
+    font-family:"Nunito";font-size:10px;font-weight:800;
+    text-transform:uppercase;letter-spacing:1px;
+    background:#efeaff;color:#5b3df5;margin-right:6px;
+  }
+</style></head>
+<body>
+  <div class="row">
+    <div>
+      <div class="display">Aa Bb 123</div>
+      <div style="margin-top:6px"><span class="pill">display</span><span class="meta">Bricolage Grotesque · 800 · opsz 96</span></div>
+    </div>
+  </div>
+  <div class="row" style="align-items:center">
+    <div class="sans">Focus today. Finish strong.</div>
+    <span class="pill" style="background:#fff2e6;color:#ff7a59">sans</span>
+    <span class="meta">Nunito · 500–800</span>
+  </div>
+  <div class="row" style="align-items:center">
+    <div class="mono">25:00</div>
+    <span class="pill" style="background:#ffd447;color:#1a1633">mono</span>
+    <span class="meta">JetBrains Mono · 500 · tabular-nums for timers</span>
+  </div>
+</body></html>

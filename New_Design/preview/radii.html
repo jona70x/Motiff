@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Radii</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{padding:16px;background:var(--bg-surface);font-family:var(--font-sans)}
+  .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .sq{width:60px;height:60px;background:#fff;border:1px solid var(--border-1)}
+  .circ{width:56px;height:56px;border-radius:9999px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:300}
+  .lbl{font-family:var(--font-mono);font-size:10px;color:var(--fg-6);text-align:center;line-height:1.3}
+  .lbl b{color:var(--fg-2);display:block;font-family:var(--font-sans);font-weight:600;font-size:11px}
+</style></head>
+<body>
+<div class="row">
+  <div class="cell"><div class="sq" style="border-radius:4px"></div><div class="lbl"><b>4</b>kind badge</div></div>
+  <div class="cell"><div class="sq" style="border-radius:6px"></div><div class="lbl"><b>6</b>chip / btn sm</div></div>
+  <div class="cell"><div class="sq" style="border-radius:8px"></div><div class="lbl"><b>8</b>btn · input</div></div>
+  <div class="cell"><div class="sq" style="border-radius:10px"></div><div class="lbl"><b>10</b>toast</div></div>
+  <div class="cell"><div class="sq" style="border-radius:12px"></div><div class="lbl"><b>12</b>card</div></div>
+  <div class="cell"><div class="sq" style="border-radius:14px"></div><div class="lbl"><b>14</b># badge</div></div>
+  <div class="cell"><div class="circ">+</div><div class="lbl"><b>28</b>FAB</div></div>
+  <div class="cell"><div class="sq" style="border-radius:30px;width:120px;height:44px;background:#111"></div><div class="lbl"><b>30</b>timer pill</div></div>
+</div>
+</body></html>

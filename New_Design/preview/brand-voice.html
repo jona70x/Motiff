@@ -1,0 +1,115 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Voice samples</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  *{box-sizing:border-box}
+  body{
+    padding:18px;
+    background: linear-gradient(135deg,#fbfaff 0%, #fff 55%, #fff2e6 100%);
+    font-family:"Nunito",sans-serif;color:#1a1633;
+  }
+  .section{
+    display:flex;flex-direction:column;gap:6px;margin-bottom:14px;
+  }
+  h4{
+    font-size:10px;font-weight:800;color:#5b3df5;
+    text-transform:uppercase;letter-spacing:1.4px;margin:0;
+    display:flex;align-items:center;gap:6px;
+  }
+  h4::before{
+    content:"";width:5px;height:5px;border-radius:50%;background:#ff7a59;
+  }
+
+  /* Onboarding sample stack — shows the 4 beats as a mini strip */
+  .onb{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  }
+  .beat{
+    background:#fff;border-radius:14px;padding:12px 12px 14px;
+    display:flex;flex-direction:column;gap:4px;
+    box-shadow: 0 1px 2px rgba(26,22,51,.05), 0 0 0 1px rgba(91,61,245,.08);
+    position:relative;overflow:hidden;
+  }
+  .beat .emoji{font-size:26px;line-height:1}
+  .beat .t{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:14px;font-weight:800;line-height:1.15;letter-spacing:-0.02em;
+    color:#1a1633;
+  }
+  .beat .b{font-size:11px;color:#4b4770;line-height:1.4;font-weight:500}
+  .beat .n{
+    position:absolute;top:8px;right:10px;
+    font-family:"Bricolage Grotesque";
+    font-size:10px;font-weight:800;color:#adaacc;letter-spacing:.2px;
+  }
+  .beat.b1{background:linear-gradient(180deg,#fff 60%,#fff2e6 100%)}
+  .beat.b2{background:linear-gradient(180deg,#fff 60%,#efeaff 100%)}
+  .beat.b3{background:linear-gradient(180deg,#fff 60%,#fff7d6 100%)}
+  .beat.b4{background:linear-gradient(180deg,#fff 60%,#d8f5e8 100%)}
+
+  /* Single-line voice samples */
+  .q{
+    background:#fff;border-radius:12px;padding:12px 14px;
+    font-size:14px;color:#2e2a4d;line-height:1.5;margin:0;
+    box-shadow: 0 1px 2px rgba(26,22,51,.05), 0 0 0 1px rgba(91,61,245,.08);
+  }
+  .q .lead{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:16px;font-weight:800;color:#1a1633;letter-spacing:-0.015em;
+    display:block;margin-bottom:3px;
+  }
+  .q.empty .lead::after{content:" ✨";color:#ffba17}
+
+  /* Tone tags */
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{
+    display:inline-block;padding:4px 10px;border-radius:999px;
+    font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
+  }
+  .tag.a{background:#efeaff;color:#5b3df5}
+  .tag.b{background:#fff2e6;color:#c85418}
+  .tag.c{background:#fff7d6;color:#8a6b00}
+  .tag.d{background:#d8f5e8;color:#1f9a72}
+  .tag.e{background:#1a1633;color:#ffd447}
+</style></head>
+<body>
+
+<div class="section">
+  <h4>Onboarding · 4 beats</h4>
+  <div class="onb">
+    <div class="beat b1"><span class="n">01</span><span class="emoji">📚</span><span class="t">Welcome to Motiff</span><span class="b">Your all-in-one academic companion — built for students who want to stay on top.</span></div>
+    <div class="beat b2"><span class="n">02</span><span class="emoji">🗂️</span><span class="t">Track every course</span><span class="b">Add courses, upload syllabi. We'll pull out the dates so nothing slips.</span></div>
+    <div class="beat b3"><span class="n">03</span><span class="emoji">⏱️</span><span class="t">Focus, then recharge</span><span class="b">A Pomodoro timer keeps you in the zone. Set a budget, build a streak.</span></div>
+    <div class="beat b4"><span class="n">04</span><span class="emoji">🔔</span><span class="t">Never miss a deadline</span><span class="b">We'll nudge you before it gets scary. You focus on studying, not remembering.</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h4>Empty state</h4>
+  <p class="q empty"><span class="lead">Nothing to plan yet</span>Add assignments to your courses and they'll appear here in priority order.</p>
+</div>
+
+<div class="section">
+  <h4>Celebration · session complete</h4>
+  <p class="q"><span class="lead">🎉 Session complete!</span>Take a 5-minute break before your next session. You earned it.</p>
+</div>
+
+<div class="section">
+  <h4>Destructive confirm · no emoji</h4>
+  <p class="q"><span class="lead">Delete course?</span>"Intro to Psych" and all its assignments and syllabi will be permanently deleted. This cannot be undone.</p>
+</div>
+
+<div class="section">
+  <h4>Tone tags</h4>
+  <div class="tags">
+    <span class="tag a">Warm + direct</span>
+    <span class="tag b">Second person (you)</span>
+    <span class="tag c">Sentence case</span>
+    <span class="tag d">American</span>
+    <span class="tag e">Emoji at moments, not everywhere</span>
+  </div>
+</div>
+
+</body></html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Undo toast</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  *{box-sizing:border-box}
+  body{
+    padding:22px;
+    background: linear-gradient(135deg,#fbfaff 0%, #fff 60%, #fff2e6 100%);
+    font-family:"Nunito",sans-serif;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .toast{
+    background:#1e1a3a;color:#fff;border-radius:14px;
+    padding:14px 16px 14px 18px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    width:100%;max-width:560px;
+    box-shadow: 0 8px 24px rgba(26,22,51,.35), 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .left{
+    display:inline-flex;align-items:center;gap:10px;min-width:0;
+  }
+  .dot{
+    width:22px;height:22px;border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #5de5b5 0%, #2fd19b 70%);
+    color:#fff;display:inline-flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;flex-shrink:0;
+  }
+  .txt{
+    font-size:14px;font-weight:700;color:#fff;letter-spacing:-0.005em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .act{
+    background:transparent;border:0;cursor:pointer;font-family:"Nunito",sans-serif;
+    color:#ffd447;font-size:13px;font-weight:800;
+    text-transform:uppercase;letter-spacing:1.2px;
+    padding:6px 4px;flex-shrink:0;
+  }
+  .act:hover{color:#ffe27a}
+</style></head>
+<body>
+<div class="toast">
+  <span class="left">
+    <span class="dot">✓</span>
+    <span class="txt">Marked as done</span>
+  </span>
+  <button class="act">Undo</button>
+</div>
+</body></html>

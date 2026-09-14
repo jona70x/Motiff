@@ -1,0 +1,146 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Buttons</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{
+    padding:22px;
+    background: linear-gradient(135deg, #fbfaff 0%, #fff 60%, #fff2e6 100%);
+    font-family:"Nunito",sans-serif;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .label{
+    font-size:10px;font-weight:800;color:#9793b8;
+    text-transform:uppercase;letter-spacing:1.2px;
+    width:70px;flex-shrink:0;
+  }
+  button{font-family:"Nunito",sans-serif;cursor:pointer;border:0;transition:transform 120ms ease, box-shadow 120ms ease, filter 120ms ease}
+  button:active{transform:translateY(1px)}
+
+  /* Hero CTA — the motivating "go" button. Gradient + depth + shine. */
+  .hero{
+    background: linear-gradient(180deg, #7a5cff 0%, #5b3df5 100%);
+    color:#fff;border-radius:14px;padding:16px 26px;
+    font-size:16px;font-weight:800;letter-spacing:-0.005em;
+    box-shadow: 0 6px 0 #3a21c4, 0 10px 22px rgba(91,61,245,.35);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .hero:hover{filter:brightness(1.05)}
+  .hero .spark{
+    width:18px;height:18px;border-radius:50%;
+    background:#ffd447;
+    box-shadow:0 0 0 3px rgba(255,212,71,.25);
+    display:inline-block;
+  }
+
+  /* Start Focus — peach energy pill, the single most-tapped action */
+  .focus{
+    background: linear-gradient(180deg, #ff9578 0%, #ff7a59 100%);
+    color:#fff;border-radius:10px;padding:10px 16px;
+    font-size:13px;font-weight:800;letter-spacing:-0.005em;
+    box-shadow: 0 3px 0 #d4512e, 0 6px 14px rgba(255,122,89,.35);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .focus::before{content:"▶";font-size:10px}
+
+  /* Primary solid — indigo, for sign-in and modal confirms */
+  .primary{
+    background:#1a1633;color:#fff;border-radius:12px;padding:14px 22px;
+    font-size:15px;font-weight:800;letter-spacing:-0.005em;
+    box-shadow: 0 4px 0 #0a081a, 0 8px 16px rgba(26,22,51,.2);
+  }
+
+  /* Done check — circular mint, celebratory */
+  .done{
+    width:44px;height:44px;border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #5de5b5 0%, #2fd19b 70%);
+    color:#fff;font-size:20px;font-weight:800;
+    box-shadow: 0 3px 0 #1f9a72, 0 6px 12px rgba(47,209,155,.35);
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+
+  /* Soft chip — lilac */
+  .chip{
+    background:#efeaff;color:#5b3df5;border-radius:999px;
+    padding:8px 14px;font-size:12px;font-weight:800;letter-spacing:.2px;
+  }
+  .chip:hover{background:#e1d9ff}
+
+  /* Ghost link */
+  .ghost{
+    background:transparent;color:#5b3df5;padding:6px 4px;
+    font-size:14px;font-weight:700;
+    border-bottom:2px solid transparent;
+  }
+  .ghost:hover{border-bottom-color:#5b3df5}
+
+  /* Disabled */
+  .disabled{
+    background:#d6d4e8;color:#fff;border-radius:12px;padding:14px 22px;
+    font-size:15px;font-weight:800;cursor:not-allowed;box-shadow:none;
+  }
+
+  /* Timer pause pill (dark surface) */
+  .pause-wrap{
+    background:#0a0a0a;border-radius:16px;padding:14px 16px;
+    display:inline-flex;gap:8px;align-items:center;
+  }
+  .pause{
+    background:#fff;color:#0a0a0a;border-radius:999px;
+    padding:12px 32px;font-size:15px;font-weight:800;letter-spacing:-0.005em;
+  }
+  .resume{
+    background:linear-gradient(180deg,#7a5cff 0%,#5b3df5 100%);
+    color:#fff;border-radius:999px;padding:12px 32px;
+    font-size:15px;font-weight:800;letter-spacing:-0.005em;
+    box-shadow:0 3px 0 #3a21c4;
+  }
+
+  /* FAB — sun-yellow, joyful */
+  .fab{
+    width:58px;height:58px;border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ffe27a 0%, #ffd447 70%);
+    color:#1a1633;font-size:30px;font-weight:700;
+    box-shadow: 0 5px 0 #d9ab1a, 0 10px 20px rgba(255,212,71,.45);
+    display:inline-flex;align-items:center;justify-content:center;
+    padding-bottom:2px;
+  }
+
+  /* Streak badge — sits next to FAB as an example */
+  .streak{
+    background:#1a1633;color:#ffd447;border-radius:999px;
+    padding:8px 14px;font-size:12px;font-weight:800;
+    display:inline-flex;gap:6px;align-items:center;
+    font-family:"Bricolage Grotesque",sans-serif;
+  }
+  .streak::before{content:"✦";color:#ff7a59}
+</style></head>
+<body>
+  <div class="row">
+    <div class="label">Hero</div>
+    <button class="hero"><span class="spark"></span>Let's go</button>
+    <button class="primary">Sign in</button>
+    <button class="disabled" disabled>Sign in</button>
+  </div>
+  <div class="row">
+    <div class="label">Action</div>
+    <button class="focus">Start Focus</button>
+    <button class="done" aria-label="Mark done">✓</button>
+    <button class="chip">Sign out</button>
+    <button class="ghost">Forgot password?</button>
+  </div>
+  <div class="row">
+    <div class="label">Timer</div>
+    <div class="pause-wrap">
+      <button class="pause">Pause</button>
+      <button class="resume">Resume</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="label">FAB</div>
+    <button class="fab">+</button>
+    <span class="streak">7-day streak</span>
+  </div>
+</body></html>

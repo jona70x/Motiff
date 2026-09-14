@@ -1,0 +1,167 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Assignment card</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  body{
+    padding:16px;
+    background: linear-gradient(135deg,#fbfaff 0%, #fff 60%, #fff2e6 100%);
+    font-family:"Nunito",sans-serif;
+    display:flex;flex-direction:column;gap:12px;
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box}
+
+  .card{
+    position:relative;background:#fff;border-radius:18px;
+    padding:14px 16px 14px 22px;
+    width:100%;
+    display:flex;flex-direction:column;gap:8px;
+    box-shadow: 0 1px 2px rgba(26,22,51,.06), 0 6px 18px rgba(91,61,245,.06), 0 0 0 1px rgba(91,61,245,.08);
+    overflow:hidden;
+  }
+  /* Urgency rail */
+  .card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+  }
+  .card.today::before   { background: linear-gradient(180deg,#ff7a59,#ff5e36); }
+  .card.soon::before    { background: linear-gradient(180deg,#ffd447,#ffba17); }
+  .card.later::before   { background: linear-gradient(180deg,#7a5cff,#5b3df5); }
+  .card.overdue::before { background: linear-gradient(180deg,#ff3d6b,#b0002e); }
+
+  .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .course{
+    font-size:11px;font-weight:800;color:#5b3df5;
+    text-transform:uppercase;letter-spacing:1.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    min-width:0;flex:1;
+  }
+  .badge{
+    font-size:10px;font-weight:800;border-radius:999px;padding:3px 9px;
+    text-transform:uppercase;letter-spacing:.6px;flex-shrink:0;
+  }
+  .badge.exam       { background:#ffe4ea;color:#b0002e; }
+  .badge.assignment { background:#e3f2fd;color:#1565c0; }
+  .badge.project    { background:#efeaff;color:#5b3df5; }
+  .badge.reading    { background:#d8f5e8;color:#1f9a72; }
+
+  .title{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:17px;font-weight:800;color:#1a1633;
+    line-height:1.25;letter-spacing:-0.015em;
+    overflow-wrap:anywhere;
+  }
+
+  .meta-row{
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    border-radius:999px;padding:4px 10px 4px 8px;
+    font-size:11px;font-weight:800;letter-spacing:-0.005em;
+    white-space:nowrap;
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .pill.today   { background:#fff2e6;color:#c85418; }
+  .pill.today   .dot{background:#ff7a59;box-shadow:0 0 0 3px rgba(255,122,89,.2)}
+  .pill.soon    { background:#fff7d6;color:#8a6b00; }
+  .pill.soon    .dot{background:#ffba17;box-shadow:0 0 0 3px rgba(255,186,23,.2)}
+  .pill.later   { background:#efeaff;color:#5b3df5; }
+  .pill.later   .dot{background:#7a5cff;box-shadow:0 0 0 3px rgba(122,92,255,.2)}
+  .pill.overdue { background:#ffe4ea;color:#b0002e; }
+  .pill.overdue .dot{background:#ff3d6b;box-shadow:0 0 0 3px rgba(255,61,107,.2)}
+
+  .est{
+    font-size:11px;font-weight:700;color:#6b6690;
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  .est::before{content:"◷";color:#9793b8}
+
+  .prog{
+    height:4px;border-radius:4px;background:#efeaff;overflow:hidden;
+  }
+  .prog > span{
+    display:block;height:100%;
+    background:linear-gradient(90deg,#5b3df5,#ff7a59);
+    border-radius:4px;
+  }
+  .prognote{
+    display:flex;justify-content:space-between;
+    font-size:10px;font-weight:800;color:#9793b8;
+    text-transform:uppercase;letter-spacing:.6px;
+  }
+
+  .actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:2px}
+  .done{
+    width:36px;height:36px;border-radius:50%;
+    background:#fff;color:#2fd19b;font-size:15px;font-weight:800;
+    border:2px solid #d6d4e8;cursor:pointer;flex-shrink:0;
+  }
+  .done:hover{border-color:#2fd19b;background:#eefbf5}
+  .focus{
+    background:linear-gradient(180deg,#ff9578,#ff7a59);
+    color:#fff;border:0;border-radius:11px;padding:9px 16px;
+    font-family:"Nunito";font-size:12px;font-weight:800;letter-spacing:-0.005em;
+    cursor:pointer;
+    box-shadow: 0 3px 0 #d4512e, 0 5px 12px rgba(255,122,89,.3);
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .focus::before{content:"▶";font-size:9px}
+</style></head>
+<body>
+
+<!-- Overdue / urgent — full card with progress -->
+<div class="card overdue">
+  <div class="top">
+    <span class="course">Linear Algebra</span>
+    <span class="badge exam">Exam</span>
+  </div>
+  <div class="title">Midterm — chapters 1–5</div>
+  <div class="meta-row">
+    <span class="pill overdue"><span class="dot"></span>Due in 4h · 2:00 PM</span>
+    <span class="est">90 min estimated</span>
+  </div>
+  <div class="prog"><span style="width:55%"></span></div>
+  <div class="prognote"><span>50 / 90 min focused</span><span>55%</span></div>
+  <div class="actions">
+    <button class="done" aria-label="Mark done">✓</button>
+    <button class="focus">Start Focus</button>
+  </div>
+</div>
+
+<!-- Today -->
+<div class="card today">
+  <div class="top">
+    <span class="course">Intro to Psychology</span>
+    <span class="badge assignment">Assignment</span>
+  </div>
+  <div class="title">Chapter 4 response paper</div>
+  <div class="meta-row">
+    <span class="pill today"><span class="dot"></span>Due tonight · 11:59 PM</span>
+    <span class="est">45 min</span>
+  </div>
+  <div class="actions">
+    <button class="done" aria-label="Mark done">✓</button>
+    <button class="focus">Start Focus</button>
+  </div>
+</div>
+
+<!-- This week -->
+<div class="card soon">
+  <div class="top">
+    <span class="course">Modern Poetry</span>
+    <span class="badge project">Project</span>
+  </div>
+  <div class="title">Final presentation outline</div>
+  <div class="meta-row">
+    <span class="pill soon"><span class="dot"></span>Due Fri · in 3 days</span>
+    <span class="est">60 min</span>
+  </div>
+  <div class="actions">
+    <button class="done" aria-label="Mark done">✓</button>
+    <button class="focus">Start Focus</button>
+  </div>
+</div>
+
+</body></html>

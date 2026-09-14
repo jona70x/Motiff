@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Neutrals</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{padding:18px;background:#fbfaff;font-family:"Nunito",sans-serif}
+  .row{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+  .sw{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;box-shadow: inset 0 0 0 1px rgba(91,61,245,0.06)}
+  .sw .tok{font-size:10px;font-weight:700;color:var(--fg-1);background:rgba(255,255,255,.92);padding:2px 5px;border-radius:4px;align-self:flex-start;font-family:"Nunito"}
+  .sw[data-dark="1"] .tok{color:#fff;background:rgba(26,22,51,.35)}
+  .label{font-size:10px;color:var(--fg-5);margin-top:5px;font-family:"JetBrains Mono",monospace;font-weight:500}
+  .cell{display:flex;flex-direction:column;gap:2px}
+</style></head>
+<body>
+<div class="row">
+  <div class="cell"><div class="sw" data-dark="1" style="background:#1a1633"><span class="tok">fg-1</span></div><div class="label">#1a1633</div></div>
+  <div class="cell"><div class="sw" data-dark="1" style="background:#2e2a4d"><span class="tok">fg-2</span></div><div class="label">#2e2a4d</div></div>
+  <div class="cell"><div class="sw" data-dark="1" style="background:#4b4770"><span class="tok">fg-3</span></div><div class="label">#4b4770</div></div>
+  <div class="cell"><div class="sw" data-dark="1" style="background:#6b6690"><span class="tok">fg-4</span></div><div class="label">#6b6690</div></div>
+  <div class="cell"><div class="sw" data-dark="1" style="background:#827ea5"><span class="tok">fg-5</span></div><div class="label">#827ea5</div></div>
+  <div class="cell"><div class="sw" style="background:#9793b8"><span class="tok">fg-6</span></div><div class="label">#9793b8</div></div>
+  <div class="cell"><div class="sw" style="background:#adaacc"><span class="tok">fg-7</span></div><div class="label">#adaacc</div></div>
+  <div class="cell"><div class="sw" style="background:#c4c1dc"><span class="tok">fg-8</span></div><div class="label">#c4c1dc</div></div>
+  <div class="cell"><div class="sw" style="background:#d6d4e8"><span class="tok">fg-9</span></div><div class="label">#d6d4e8</div></div>
+  <div class="cell"><div class="sw" style="background:#e6e4f2"><span class="tok">fg-10</span></div><div class="label">#e6e4f2</div></div>
+</div>
+</body></html>

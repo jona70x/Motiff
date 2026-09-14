@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Semantic colors</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{padding:16px;background:var(--bg-surface);font-family:var(--font-sans)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .item{border-radius:8px;overflow:hidden;border:1px solid var(--border-1)}
+  .pair{display:flex;height:64px}
+  .fg,.bg{flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .cap{padding:8px 10px;background:#fff;border-top:1px solid var(--border-1)}
+  .name{font-size:11px;font-weight:600;color:var(--fg-2)}
+  .usage{font-size:10px;color:var(--fg-6);margin-top:2px}
+</style></head>
+<body>
+<div class="grid">
+  <div class="item"><div class="pair"><div class="fg" style="background:#ffebee;color:#b00020">Aa</div><div class="bg" style="background:#b00020;color:#fff">#b00020</div></div><div class="cap"><div class="name">Red</div><div class="usage">Overdue / exam / error</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#fff;color:#e65100">Aa</div><div class="bg" style="background:#e65100;color:#fff">#e65100</div></div><div class="cap"><div class="name">Orange</div><div class="usage">Due today</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#e3f2fd;color:#1565c0">Aa</div><div class="bg" style="background:#1565c0;color:#fff">#1565c0</div></div><div class="cap"><div class="name">Blue</div><div class="usage">Due this week / assignment</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#f3e5f5;color:#6a1b9a">Aa</div><div class="bg" style="background:#6a1b9a;color:#fff">#6a1b9a</div></div><div class="cap"><div class="name">Purple</div><div class="usage">Project</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#e8f5e9;color:#2e7d32">Aa</div><div class="bg" style="background:#2e7d32;color:#fff">#2e7d32</div></div><div class="cap"><div class="name">Green</div><div class="usage">Reading</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#f0f4ff;color:#3355cc">Aa</div><div class="bg" style="background:#3355cc;color:#fff">#3355cc</div></div><div class="cap"><div class="name">Link</div><div class="usage">Inline links / skip</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#fff8e1;color:#795548">Aa</div><div class="bg" style="background:#795548;color:#fff">#795548</div></div><div class="cap"><div class="name">Warn</div><div class="usage">Soft warning banner</div></div></div>
+  <div class="item"><div class="pair"><div class="fg" style="background:#f5f5f5;color:#555">Aa</div><div class="bg" style="background:#555;color:#fff">#555</div></div><div class="cap"><div class="name">Other</div><div class="usage">Neutral kind badge</div></div></div>
+</div>
+</body></html>
