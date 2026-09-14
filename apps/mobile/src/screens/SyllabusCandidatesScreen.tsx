@@ -320,7 +320,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
         },
       ]
     );
-  }, [setBusy]);
+  }, [setBusy, uploadId]);
 
   const startEdit = useCallback((candidate: SyllabusCandidate) => {
     setEditingId(candidate.id);
@@ -357,7 +357,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
     } finally {
       setBusy(candidate.id, false);
     }
-  }, [editState, setBusy]);
+  }, [editState, setBusy,uploadId]);
 
   const handleBulkConfirm = useCallback(async () => {
     const eligible = candidates.filter(
@@ -389,7 +389,7 @@ export function SyllabusCandidatesScreen({ route, navigation }: Props) {
         },
       ]
     );
-  }, [candidates, load]);
+  }, [candidates, load, uploadId]);
 
   const pendingHighCount = useMemo(
     () => candidates.filter((c) => c.status === "pending" && c.confidence_band === "high").length,

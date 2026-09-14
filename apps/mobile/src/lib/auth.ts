@@ -161,7 +161,6 @@ export function useAuthSession(): AuthState {
       authSub.subscription.unsubscribe();
       linkSub.remove();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Mount-once; loading ref is only read inside the closure, not a dep
 
   return { session, loading, recoveryMode };

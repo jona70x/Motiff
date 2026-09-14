@@ -5,7 +5,7 @@
  */
 
 import { supabase } from "../supabase";
-import { Course, CourseInsert, courseInsertSchema } from "../schema";
+import { type Course, type CourseInsert, courseInsertSchema } from "../schema";
 
 /**
  * Response shape returned by the delete-course Edge Function.

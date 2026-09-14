@@ -7,7 +7,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Course } from "../lib/schema";
 import { Icons } from "../lib/icons";
-import { C, F, R, shadow } from "../theme";
+import { C, F, shadow } from "../theme";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

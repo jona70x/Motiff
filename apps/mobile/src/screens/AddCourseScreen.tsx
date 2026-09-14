@@ -123,9 +123,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
