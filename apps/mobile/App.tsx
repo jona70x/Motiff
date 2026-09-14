@@ -14,8 +14,7 @@ import { RootNavigator } from "./src/navigation/RootNavigator";
 Sentry.init({
   dsn: "https://ec7b622acac9764292588e1c4db2bfb3@o4511239288324096.ingest.us.sentry.io/4511239392722944",
   tracesSampleRate: 0.2,
-  // eslint-disable-next-line no-undef
-  environment: __DEV__ ? "development" : "production",
+   environment: __DEV__ ? "development" : "production",
 });
 
 function App() {

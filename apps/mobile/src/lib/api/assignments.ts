@@ -1,8 +1,8 @@
 import { supabase } from "../supabase";
 import {
-  Assignment,
-  AssignmentInsert,
   assignmentInsertSchema,
+  type Assignment,
+  type AssignmentInsert,
 } from "../schema";
 
 export async function createAssignment(courseId: string, data: AssignmentInsert): Promise<Assignment | null> {
