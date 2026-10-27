@@ -41,6 +41,22 @@ describe("computeStreak", () => {
   it("returns 0 when the only logged date is older than yesterday", () => {
     expect(computeStreak([THREE_DAYS_AGO], TODAY)).toBe(0);
   });
+
+  describe("DST transitions (America/Los_Angeles)", () => {
+    // DST starts 2026-03-08: 2026-03-07 is 23h long, 2026-03-08 is 25h long.
+    it("counts a streak across the spring-forward transition", () => {
+      expect(computeStreak(["2026-03-08", "2026-03-09"], "2026-03-09")).toBe(2);
+    });
+
+    it("counts a 3-day streak spanning the spring-forward transition", () => {
+      expect(computeStreak(["2026-03-07", "2026-03-08", "2026-03-09"], "2026-03-09")).toBe(3);
+    });
+
+    // DST ends 2026-11-01: 2026-11-01 is 25h long.
+    it("counts a 3-day streak spanning the fall-back transition", () => {
+      expect(computeStreak(["2026-10-31", "2026-11-01", "2026-11-02"], "2026-11-02")).toBe(3);
+    });
+  });
 });
 
 describe("localDate", () => {
